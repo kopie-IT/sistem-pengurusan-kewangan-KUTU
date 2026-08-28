@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mainkutu_app
+    ports:
+      - "8090:80"
+    volumes:
+      - ./public_html:/var/www/html
+      - ./.env.docker:/var/www/html/.env:ro
+      - mainkutu_uploads:/var/www/html/storage/uploads
+      - mainkutu_logs:/var/www/html/storage/logs
+    env_file:
+      - .env.docker
+    depends_on:
+      - db
+    networks:
+      - mainkutu_network
+
+  db:
+    image: mysql:8.0
+    container_name: mainkutu_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: mainkutu
+      MYSQL_USER: mainkutu
+      MYSQL_PASSWORD: mainkutu_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mainkutu_db_data:/var/lib/mysql
+    networks:
+      - mainkutu_network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: mainkutu_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "8091:80"
+    depends_on:
+      - db
+    networks:
+      - mainkutu_network
+
+volumes:
+  mainkutu_db_data:
+  mainkutu_uploads:
+  mainkutu_logs:
+
+networks:
+  mainkutu_network:
+    driver: bridge

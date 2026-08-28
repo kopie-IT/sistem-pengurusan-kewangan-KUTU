@@ -1,0 +1,13 @@
+.git
+.gitignore
+README.md
+docker-compose.yml
+Dockerfile
+.dockerignore
+.vscode
+.idea
+node_modules
+public_html/storage/logs/*
+!public_html/storage/logs/.gitkeep
+public_html/storage/uploads/*
+!public_html/storage/uploads/.gitkeep

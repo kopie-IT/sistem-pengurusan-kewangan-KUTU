@@ -1,0 +1,26 @@
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+public_html/.env
+
+# Dependencies
+/vendor/
+node_modules/
+
+# Logs & runtime
+public_html/storage/logs/*
+!public_html/storage/logs/.gitkeep
+public_html/storage/uploads/*
+!public_html/storage/uploads/.gitkeep
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Docker volumes / build artifacts
+*.sqlite
