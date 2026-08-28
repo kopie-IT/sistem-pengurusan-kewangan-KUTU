@@ -1,0 +1,59 @@
+<div class="auth-shell">
+    <aside class="auth-aside" aria-label="Branding">
+        <a href="<?= url('/') ?>" class="brand">
+            <span class="nav-brand-mark" aria-hidden="true">MK</span>
+            <span>Sistem Main Kutu</span>
+        </a>
+
+        <div class="content">
+            <h2>Lupa kata laluan?</h2>
+            <p>
+                Masukkan emel yang berdaftar dengan akaun anda. Kami akan
+                hantar pautan untuk menetapkan kata laluan baru.
+            </p>
+            <ul>
+                <li>Pautan sah selama 1 jam</li>
+                <li>Sekali guna sahaja</li>
+                <li>Sila semak folder spam jika tiada dalam peti masuk</li>
+            </ul>
+        </div>
+
+        <p class="meta">&copy; <?= date('Y') ?> Sistem Pengurusan Main Kutu</p>
+    </aside>
+
+    <section class="auth-main">
+        <div class="auth-card">
+            <a href="<?= url('/') ?>" class="auth-brand-mobile">
+                <span class="nav-brand-mark" aria-hidden="true">MK</span>
+                <span>Main Kutu</span>
+            </a>
+
+            <h1>Reset kata laluan</h1>
+            <p class="subtitle">Masukkan emel akaun anda untuk menerima pautan tetapan semula.</p>
+
+            <?= flash_messages() ?>
+
+            <form method="POST" action="<?= url('/forgot-password') ?>" novalidate>
+                <?= csrf_field() ?>
+
+                <div class="form-group">
+                    <label for="email" class="form-label">Emel</label>
+                    <input type="email" id="email" name="email" required autocomplete="email"
+                           placeholder="nama@contoh.com"
+                           value="<?= e($_SESSION['old']['email'] ?? '') ?>"
+                           class="form-control">
+                    <?php unset($_SESSION['old']); ?>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-lg">
+                    Hantar Pautan Reset
+                </button>
+
+                <p class="text-center text-muted" style="font-size: 0.9rem; margin-top: 1.25rem;">
+                    Ingat kata laluan anda?
+                    <a href="<?= url('/login') ?>">Log masuk</a>
+                </p>
+            </form>
+        </div>
+    </section>
+</div>

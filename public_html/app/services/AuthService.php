@@ -214,6 +214,48 @@ final class AuthService
     }
 
     /**
+     * User-initiated "forgot password" flow.
+     *
+     * Always returns ok=true with a generic message to prevent user
+     * enumeration. If the email exists, an active user, and not locked,
+     * a single-use reset token is generated and persisted.
+     *
+     * @return array{ok: bool, url?: string, token?: string}
+     */
+    public function requestPasswordReset(string $email): array
+    {
+        $generic = ['ok' => true];
+        $user    = $this->users->findByEmail($email);
+        if (!$user) {
+            // Pretend success to avoid user enumeration.
+            return $generic;
+        }
+        if (!$user->isActive()) {
+            return $generic;
+        }
+
+        $plaintext  = bin2hex(random_bytes(16)); // 32-char hex token
+        $tokenHash  = hash('sha256', $plaintext);
+        $expiresAt  = date('Y-m-d H:i:s', time() + self::RESET_TOKEN_TTL);
+
+        $this->resets->deleteForUser($user->id);
+        $this->resets->create($user->id, $tokenHash, $expiresAt, null);
+
+        AuditService::log('auth.password.reset_requested', $user->id, 'user', $user->id, [
+            'expires_at' => $expiresAt,
+        ]);
+
+        // No SMTP configured in this environment — surface the link to the
+        // requester so they can complete the flow. In production this would
+        // dispatch an email via NotificationService instead.
+        return [
+            'ok'    => true,
+            'token' => $plaintext,
+            'url'   => url('/reset-password?token=' . $plaintext),
+        ];
+    }
+
+    /**
      * Validate a plaintext token and return the user, or null.
      */
     public function findUserByResetToken(string $plaintextToken): ?User

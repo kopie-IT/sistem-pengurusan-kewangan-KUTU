@@ -63,7 +63,7 @@
                         <input type="checkbox" name="remember" value="1">
                         <span>Ingat saya</span>
                     </label>
-                    <a href="#">Lupa kata laluan?</a>
+                    <a href="<?= url('/forgot-password') ?>">Lupa kata laluan?</a>
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-block btn-lg">Log Masuk</button>

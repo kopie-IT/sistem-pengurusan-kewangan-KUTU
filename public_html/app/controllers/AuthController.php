@@ -167,6 +167,51 @@ final class AuthController extends Controller
         $this->redirect('/login');
     }
 
+    // ----------------------------------------------------------------------
+    // Forgot password (public)
+    // ----------------------------------------------------------------------
+
+    public function showForgotPassword(): void
+    {
+        $this->view('auth/forgot-password', [
+            'title'  => 'Lupa Kata Laluan',
+            'layout' => 'layouts/auth',
+        ]);
+    }
+
+    public function forgotPassword(): void
+    {
+        $token = (string) ($_POST['csrf_token'] ?? '');
+        if (!hash_equals((string) ($_SESSION['csrf_token'] ?? ''), $token)) {
+            set_flash('error', 'Sesi tidak sah. Sila cuba lagi.');
+            $this->redirect('/forgot-password');
+        }
+
+        $email = trim((string) ($_POST['email'] ?? ''));
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            set_flash('error', 'Sila masukkan emel yang sah.');
+            $_SESSION['old']['email'] = $email;
+            $this->redirect('/forgot-password');
+        }
+
+        $result = $this->auth->requestPasswordReset($email);
+
+        // Generic message to prevent user enumeration.
+        $message = 'Jika emel berdaftar, pautan tetapan semula telah dihantar.';
+        set_flash('success', $message);
+
+        // In this environment there is no SMTP — show the reset link inline
+        // when running in debug/local mode so the user can complete the flow.
+        // The link is only set when a token was actually generated (existing
+        // + active user), and only ever displayed outside production.
+        $debug = filter_var(config('APP_DEBUG', 'false'), FILTER_VALIDATE_BOOLEAN);
+        if ($debug && !empty($result['url'])) {
+            set_flash('info', 'Pautan pembangunan: ' . $result['url']);
+        }
+
+        $this->redirect('/forgot-password');
+    }
+
     private function redirectTarget(string $token): string
     {
         return $token !== '' ? '/reset-password?token=' . urlencode($token) : '/reset-password';

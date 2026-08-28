@@ -15,6 +15,14 @@ Format mengikut Keep a Changelog.
 - Shell authenticated, sidebar, kad, ringkasan, senarai tindakan, pautan pantas, dan susun atur mudah alih dikemas kini dengan hierarki visual enterprise yang konsisten.
 - Header authenticated kini menghantar pentadbir ke `/admin` dan ahli ke `/dashboard`.
 
+### Added - Lupa Kata Laluan Flow
+- Halaman `/forgot-password` (GET/POST) untuk pengguna yang terlupa kata laluan.
+- `AuthService::requestPasswordReset()` menjana token sekali guna (hash SHA-256, sah 1 jam) dan mengaudit `auth.password.reset_requested`.
+- `AuthController::showForgotPassword()` dan `forgotPassword()` dengan validasi emel dan perlindungan anti-enumerasi (mesej generik).
+- View `auth/forgot-password.php` dengan reka letak auth konsisten.
+- Pautan `Lupa kata laluan?` pada halaman log masuk kini berfungsi dan mengarahkan ke `/forgot-password`.
+- Laluan `/forgot-password` didaftarkan dalam `web.php` (GET untuk papar, POST untuk proses).
+
 ### Changed - Sidebar & Login Polish
 - Sidebar dijenamakan semula dengan ikon SVG setiap item, garis penunjuk aktif, jarak kumpulan lebih konsisten, dan label kumpulan yang lebih halus.
 - Halaman log masuk kini mempunyai butang papar/sembunyi kata laluan (`input-affix` + `app.js` `initPasswordToggle`) dengan keadaan ARIA penuh.
