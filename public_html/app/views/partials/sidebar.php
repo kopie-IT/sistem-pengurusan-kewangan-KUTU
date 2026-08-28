@@ -40,6 +40,8 @@ $icon = static function (string $key): string {
 };
 
 $isAdmin = in_array($role, ['admin', 'super_admin', 'staff'], true);
+// Sidebar Sistem group + Tetapan page is restricted to admin/super_admin only.
+$isSuperAdmin = in_array($role, ['admin', 'super_admin'], true);
 
 if ($isAdmin) {
     $sideTitle = 'Pentadbir';
@@ -80,13 +82,17 @@ if ($isAdmin) {
                 ['label' => 'Skor Kredit', 'url' => '/admin/credit-scores', 'icon' => 'credit'],
             ],
         ],
-        [
+    ];
+
+    // Sistem > Tetapan hanya untuk admin / super_admin (bukan staff).
+    if ($isSuperAdmin) {
+        $groups[] = [
             'label' => 'Sistem',
             'items' => [
                 ['label' => 'Tetapan', 'url' => '/admin/settings', 'icon' => 'settings'],
             ],
-        ],
-    ];
+        ];
+    }
 } else {
     $sideTitle = 'Ahli';
     $groups = [

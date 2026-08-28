@@ -8,6 +8,11 @@ Format mengikut Keep a Changelog.
 
 ## [Unreleased]
 
+### Changed - Sidebar Accordion & Admin-Only Tetapan
+- **Sidebar accordion**: `initSidebarCollapse()` dalam `public/assets/js/app.js` kini berkelakuan seperti accordion — apabila pengguna membuka satu kumpulan, semua kumpulan lain akan tertutup dahulu. Kumpulan yang mengandungi laluan aktif kekal dibuka selepas navigasi langsung. State kekal disimpan di `localStorage` (`mk:sidebar:groups:v1`).
+- **Tetapan Sistem (admin sahaja)**: halaman `/admin/settings` (GET + POST) kini hanya boleh diakses oleh peranan `admin` dan `super_admin` (staf dihalang). Akses dikawal oleh gate baru `Authorize::class => 'super_admin'` dalam `app/routes/web.php` (middleware menerima `['admin', 'super_admin']` sahaja, tiada `staff`).
+- **Sidebar Sistem group**: kumpulan `Sistem > Tetapan` dalam `app/views/partials/sidebar.php` hanya dipaparkan untuk `admin` dan `super_admin` — staf tidak lagi nampak pautan ini. Akses terus ke URL `/admin/settings` oleh staf akan di-redirect ke `/dashboard`.
+
 ### Added - Admin Settings, Brand & QR Management
 - Halaman `/admin/settings` untuk pentadbir mengurus **nama sistem**, **tagline**, **logo**, dan **QR pembayaran** dengan pratonton masa nyata.
 - `AdminSettingsController` mengendalikan muat naik logo + QR sistem (PNG/JPG/SVG/WEBP, ≤2 MB), penyingkiran, dan audit.

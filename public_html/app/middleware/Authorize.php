@@ -32,9 +32,12 @@ final class Authorize
 
         $userRole = $_SESSION['user_role'] ?? null;
         $allowed = match ($this->role) {
-            'admin'  => in_array($userRole, ['admin', 'super_admin', 'staff'], true),
-            'member' => $userRole !== null,
-            default  => $userRole === $this->role,
+            // Top-level configuration gate: only super-admins (no staff).
+            'super_admin' => in_array($userRole, ['admin', 'super_admin'], true),
+            // Admin gate: any administrative user (admin / super_admin / staff).
+            'admin'       => in_array($userRole, ['admin', 'super_admin', 'staff'], true),
+            'member'      => $userRole !== null,
+            default       => $userRole === $this->role,
         };
 
         if (!$allowed) {

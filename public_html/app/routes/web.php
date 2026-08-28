@@ -71,6 +71,8 @@ $router->get('/file/slip/{id}', [FileController::class, 'download'], 'file.slip'
 // ---------------------------------------------------------------------------
 $auth = [Authenticate::class, ForcePasswordReset::class];
 $admin = [Authenticate::class, ForcePasswordReset::class, Authorize::class => 'admin'];
+// Top-level configuration gate (Tetapan Sistem): admin + super_admin only.
+$superAdmin = [Authenticate::class, ForcePasswordReset::class, Authorize::class => 'super_admin'];
 
 // Dashboard (role-aware: member vs admin)
 $router->get('/dashboard', [DashboardController::class, 'index'], 'dashboard', $auth);
@@ -148,9 +150,9 @@ $router->get('/admin/payouts/{id}/generate',  [PayoutController::class, 'generat
 $router->post('/admin/payouts/{id}/generate', [PayoutController::class, 'generateStore'], null, $admin);
 $router->post('/admin/payouts/{id}/slip',     [PayoutController::class, 'confirmSlip'], null, $admin);
 
-// Admin settings (system name, tagline, logo)
-$router->get('/admin/settings',  [AdminSettingsController::class, 'index'], 'admin.settings', $admin);
-$router->post('/admin/settings', [AdminSettingsController::class, 'update'], null, $admin);
+// Admin settings (system name, tagline, logo) - admin + super_admin only.
+$router->get('/admin/settings',  [AdminSettingsController::class, 'index'], 'admin.settings', $superAdmin);
+$router->post('/admin/settings', [AdminSettingsController::class, 'update'], null, $superAdmin);
 
 $router->get('/admin/credit-scores', [CreditScoreController::class, 'adminIndex'], 'admin.credit-scores', $admin);
 $router->get('/admin/credit-scores/{id}', [CreditScoreController::class, 'show'], 'admin.credit-scores.show', $admin);

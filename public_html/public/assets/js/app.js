@@ -112,8 +112,14 @@
     }
 
     // ----------------------------------------------------------------------
-    // Sidebar collapse / expand with persistent state
+    // Sidebar collapse / expand with persistent state (accordion behaviour)
     // ----------------------------------------------------------------------
+    //
+    // Only one group may stay open at a time. When the user expands a section,
+    // every other collapsible group is collapsed first.
+    //
+    // The group containing the active route always auto-expands after the user
+    // toggles, so the active item is never hidden.
     function initSidebarCollapse() {
         var sidebar = document.querySelector('[data-sidebar]');
         if (!sidebar) return;
@@ -126,24 +132,50 @@
             stored = {};
         }
 
-        var groups = sidebar.querySelectorAll('[data-group]');
-        groups.forEach(function (group) {
-            var key = group.getAttribute('data-group-key') || '';
-            var button = group.querySelector('[data-group-toggle]');
-            var children = group.querySelector('.app-nav-children');
-            if (!button || !children) return;
+        var allGroups = Array.prototype.slice.call(sidebar.querySelectorAll('[data-group]'));
 
-            // Default state: open unless user previously collapsed it.
-            var defaultOpen = group.getAttribute('data-default-open') === 'true';
-            var open = stored[key] !== undefined ? stored[key] === true : defaultOpen;
+        // Build a lookup of groupKey -> group node + aria/children refs.
+        var registry = allGroups.map(function (group) {
+            return {
+                node: group,
+                key: group.getAttribute('data-group-key') || '',
+                button: group.querySelector('[data-group-toggle]'),
+                children: group.querySelector('.app-nav-children'),
+            };
+        }).filter(function (entry) {
+            return entry.button && entry.children;
+        });
 
-            applyState(group, button, children, open);
+        // Default visual state: open unless user previously collapsed it.
+        registry.forEach(function (entry) {
+            var defaultOpen = entry.node.getAttribute('data-default-open') === 'true';
+            var open = stored[entry.key] !== undefined ? stored[entry.key] === true : defaultOpen;
+            applyState(entry.node, entry.button, entry.children, open);
+        });
 
-            button.addEventListener('click', function () {
-                var isOpen = button.getAttribute('aria-expanded') === 'true';
+        // Accordion toggle: opening a group collapses every other collapsible
+        // group first, then persists the new state.
+        registry.forEach(function (entry) {
+            entry.button.addEventListener('click', function () {
+                var isOpen = entry.button.getAttribute('aria-expanded') === 'true';
+
+                if (!isOpen) {
+                    // Close everything else (accordion).
+                    registry.forEach(function (other) {
+                        if (other === entry) return;
+                        applyState(other.node, other.button, other.children, false);
+                        if (other.key) {
+                            stored[other.key] = false;
+                        }
+                    });
+                }
+
                 var next = !isOpen;
-                applyState(group, button, children, next);
-                stored[key] = next;
+                applyState(entry.node, entry.button, entry.children, next);
+                if (entry.key) {
+                    stored[entry.key] = next;
+                }
+
                 try {
                     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
                 } catch (err) {
@@ -153,16 +185,21 @@
         });
 
         // Always keep the group containing the active route open so users
-        // never land on a hidden item.
+        // never land on a hidden item. We close all *other* groups first so
+        // the active group is the only one expanded on direct navigation.
         var activeKey = sidebar.getAttribute('data-active-group');
         if (activeKey) {
-            var activeGroup = sidebar.querySelector('[data-group-key="' + activeKey + '"]');
-            if (activeGroup) {
-                var btn = activeGroup.querySelector('[data-group-toggle]');
-                var child = activeGroup.querySelector('.app-nav-children');
-                if (btn && child) {
-                    applyState(activeGroup, btn, child, true);
+            registry.forEach(function (entry) {
+                var isActive = entry.key === activeKey;
+                applyState(entry.node, entry.button, entry.children, isActive);
+                if (entry.key) {
+                    stored[entry.key] = isActive;
                 }
+            });
+            try {
+                window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+            } catch (err) {
+                /* ignore */
             }
         }
     }
