@@ -19,7 +19,11 @@ if (!function_exists('config')) {
 if (!function_exists('asset')) {
     function asset(string $path): string
     {
-        return '/' . ltrim($path, '/');
+        // Cache-busting: append a version based on the file's last-modified time
+        // so browsers always fetch the latest CSS/JS after an update.
+        $file = dirname(__DIR__, 2) . '/public/' . ltrim($path, '/');
+        $ver = is_file($file) ? (string) filemtime($file) : '0';
+        return '/' . ltrim($path, '/') . '?v=' . $ver;
     }
 }
 
