@@ -32,7 +32,7 @@ final class Authorize
 
         $userRole = $_SESSION['user_role'] ?? null;
         $allowed = match ($this->role) {
-            'admin'  => in_array($userRole, ['admin', 'super_admin'], true),
+            'admin'  => in_array($userRole, ['admin', 'super_admin', 'staff'], true),
             'member' => $userRole !== null,
             default  => $userRole === $this->role,
         };

@@ -15,7 +15,7 @@
     <?php
     $authenticated = !empty($_SESSION['user_id']);
     $currentUser = $_SESSION['user_name'] ?? '';
-    $isAdmin = in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin'], true);
+    $isAdmin = in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin', 'staff'], true);
     $homeUrl = $isAdmin ? '/admin' : '/dashboard';
     ?>
     <div class="app-shell">

@@ -41,6 +41,6 @@ abstract class Controller
     protected function isAdmin(): bool
     {
         $role = $_SESSION['user_role'] ?? '';
-        return in_array($role, ['admin', 'super_admin'], true);
+        return in_array($role, ['admin', 'super_admin', 'staff'], true);
     }
 }

@@ -38,7 +38,7 @@ $icon = static function (string $key): string {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $d . '</svg>';
 };
 
-$isAdmin = in_array($role, ['admin', 'super_admin'], true);
+$isAdmin = in_array($role, ['admin', 'super_admin', 'staff'], true);
 
 if ($isAdmin) {
     $sideTitle = 'Pentadbir';

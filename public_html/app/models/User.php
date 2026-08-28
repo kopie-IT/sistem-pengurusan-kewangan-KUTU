@@ -39,7 +39,7 @@ final class User
 
     public function isAdmin(): bool
     {
-        return $this->roleSlug === 'admin';
+        return in_array($this->roleSlug, ['admin', 'super_admin', 'staff'], true);
     }
 
     public function mustResetPassword(): bool

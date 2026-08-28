@@ -236,7 +236,7 @@ final class PaymentController extends Controller
             $this->redirect('/payments');
         }
 
-        $isAdmin = in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin'], true);
+        $isAdmin = in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin', 'staff'], true);
         if (!$isAdmin && (int) ($slip->memberId ?? 0) !== (int) ($_SESSION['user_id'] ?? 0)
             && (int) ($slip->uploadedBy ?? 0) !== (int) ($_SESSION['user_id'] ?? 0)) {
             set_flash('error', 'Anda tidak dibenarkan memuat turun fail ini.');

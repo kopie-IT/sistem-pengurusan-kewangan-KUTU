@@ -16,12 +16,37 @@ Format mengikut Keep a Changelog.
 - Header authenticated kini menghantar pentadbir ke `/admin` dan ahli ke `/dashboard`.
 
 ### Added - Lupa Kata Laluan Flow
-- Halaman `/forgot-password` (GET/POST) untuk pengguna yang terlupa kata laluan.
 - `AuthService::requestPasswordReset()` menjana token sekali guna (hash SHA-256, sah 1 jam) dan mengaudit `auth.password.reset_requested`.
 - `AuthController::showForgotPassword()` dan `forgotPassword()` dengan validasi emel dan perlindungan anti-enumerasi (mesej generik).
 - View `auth/forgot-password.php` dengan reka letak auth konsisten.
 - Pautan `Lupa kata laluan?` pada halaman log masuk kini berfungsi dan mengarahkan ke `/forgot-password`.
 - Laluan `/forgot-password` didaftarkan dalam `web.php` (GET untuk papar, POST untuk proses).
+
+### Fixed - Credit Scores Query
+- `CreditScoreRepository::all()` dirujuk `m.full_name` tetapi lajur itu tidak wujud pada jadual `members`. Tukar kepada `u.name` melalui `INNER JOIN users` supaya halaman `/admin/credit-scores` dapat dimuat.
+
+### Added - Akaun Admin & Staf
+- Peranan `staff` ditambah pada jadual `roles` (akses seperti admin tetapi bukan ahli).
+- Akaun pentadbir:
+  - `admin@mainkutu.local` / `Admin@12345` (peranan `admin`)
+  - `superadmin@mainkutu.local` / `Super@12345` (peranan `super_admin`)
+  - `staff@mainkutu.local` / `Staff@12345` (peranan `staff`)
+- `Authorize` middleware, `User::isAdmin()`, `Controller::isAdmin()`, sidebar, header, dan semua pengawal kini menerima ketiga-tiga peranan (`admin`, `super_admin`, `staff`) untuk kawasan pentadbiran.
+- Ahli biasa masih dihalang dari kawasan admin (disahkan melalui redirect 302).
+
+### Database Changes
+```sql
+INSERT IGNORE INTO roles (name, slug, description, created_at, updated_at) VALUES
+  ('Super Admin', 'super_admin', 'Akaun pentadbir tertinggi (akses penuh)', NOW(), NOW()),
+  ('Staff',         'staff',       'Akaun staf (akses seperti admin)', NOW(), NOW());
+
+INSERT INTO users (name, email, password, role_id, status, must_reset_password, failed_login_count, locked_until, created_at, updated_at)
+VALUES
+  ('Administrator', 'admin@mainkutu.local',      '<bcrypt>', (SELECT id FROM roles WHERE slug='admin'),       'active', 0, 0, NULL, NOW(), NOW()),
+  ('Super Admin',   'superadmin@mainkutu.local', '<bcrypt>', (SELECT id FROM roles WHERE slug='super_admin'), 'active', 0, 0, NULL, NOW(), NOW()),
+  ('Staf Sistem',   'staff@mainkutu.local',      '<bcrypt>', (SELECT id FROM roles WHERE slug='staff'),       'active', 0, 0, NULL, NOW(), NOW())
+ON DUPLICATE KEY UPDATE password = VALUES(password), updated_at = NOW();
+```
 
 ### Changed - Sidebar & Login Polish
 - Sidebar dijenamakan semula dengan ikon SVG setiap item, garis penunjuk aktif, jarak kumpulan lebih konsisten, dan label kumpulan yang lebih halus.

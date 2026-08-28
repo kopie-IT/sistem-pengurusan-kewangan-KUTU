@@ -26,7 +26,7 @@ final class CreditScoreController extends Controller
     /** Show score + history for a member (admin or self). */
     public function show(int $memberId): void
     {
-        $isAdmin = in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin'], true);
+        $isAdmin = in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin', 'staff'], true);
         $member = $this->members->findById($memberId);
         if ($member === null) {
             set_flash('error', 'Ahli tidak dijumpai.');
