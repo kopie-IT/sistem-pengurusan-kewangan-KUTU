@@ -64,7 +64,7 @@ $router->post('/logout', [AuthController::class, 'logout'], 'logout');
 $router->get('/logout',  [AuthController::class, 'logout']);
 
 // Authenticated file download (slip)
-$router->get('/file/slip/{id}', [FileController::class, 'view'], 'file.slip', [Authenticate::class]);
+$router->get('/file/slip/{id}', [FileController::class, 'download'], 'file.slip', [Authenticate::class]);
 
 // ---------------------------------------------------------------------------
 // Authenticated (any role)
@@ -120,7 +120,15 @@ $router->get('/admin/plans/create',   [PlanController::class, 'create'], null, $
 $router->post('/admin/plans',         [PlanController::class, 'store'], null, $admin);
 $router->get('/admin/plans/{id}/edit',[PlanController::class, 'edit'], null, $admin);
 $router->post('/admin/plans/{id}',    [PlanController::class, 'update'], null, $admin);
+$router->post('/admin/plans/{id}/qr', [PlanController::class, 'updateQr'], null, $admin);
 $router->post('/admin/plans/{id}/generate', [PlanController::class, 'generateSchedules'], null, $admin);
+
+// Public brand assets.
+$router->get('/brand/logo', [FileController::class, 'brandLogo'], 'brand.logo');
+$router->get('/brand/qr',   [FileController::class, 'brandQr'],   'brand.qr');
+
+// Per-plan QR (public — used by member view to render the upload card).
+$router->get('/plans/{id}/qr', [FileController::class, 'planQr'], 'plan.qr');
 
 $router->get('/admin/members',        [MemberController::class, 'index'], 'admin.members', $admin);
 $router->get('/admin/members/create', [MemberController::class, 'create'], null, $admin);
@@ -134,10 +142,15 @@ $router->post('/admin/payments/{id}/reject',  [VerificationController::class, 'r
 $router->post('/admin/payments/{id}/resubmit', [VerificationController::class, 'resubmit'], null, $admin);
 
 $router->get('/admin/payouts',                 [PayoutController::class, 'adminIndex'], 'admin.payouts', $admin);
+$router->get('/admin/payouts/schedule',        [PayoutController::class, 'schedule'], 'admin.payouts.schedule', $admin);
 $router->post('/admin/payouts/schedule',       [PayoutController::class, 'createSchedule'], null, $admin);
 $router->get('/admin/payouts/{id}/generate',  [PayoutController::class, 'generate'], null, $admin);
 $router->post('/admin/payouts/{id}/generate', [PayoutController::class, 'generateStore'], null, $admin);
 $router->post('/admin/payouts/{id}/slip',     [PayoutController::class, 'confirmSlip'], null, $admin);
+
+// Admin settings (system name, tagline, logo)
+$router->get('/admin/settings',  [AdminSettingsController::class, 'index'], 'admin.settings', $admin);
+$router->post('/admin/settings', [AdminSettingsController::class, 'update'], null, $admin);
 
 $router->get('/admin/credit-scores', [CreditScoreController::class, 'adminIndex'], 'admin.credit-scores', $admin);
 $router->get('/admin/credit-scores/{id}', [CreditScoreController::class, 'show'], 'admin.credit-scores.show', $admin);

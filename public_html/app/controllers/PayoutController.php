@@ -51,6 +51,30 @@ final class PayoutController extends Controller
         ]);
     }
 
+    /** Admin: dedicated create-schedule page (GET). */
+    public function schedule(): void
+    {
+        $planId = (int) ($_GET['plan_id'] ?? 0);
+        $plans  = $this->plans->all();
+        $plan   = $planId > 0 ? $this->plans->findById($planId) : null;
+
+        // Members for the chosen plan (approved/active). Falls back to all
+        // active members if no plan is preselected.
+        $members = [];
+        if ($plan !== null) {
+            foreach ($this->members->allActive() as $m) {
+                $members[] = $m;
+            }
+        }
+
+        $this->view('payouts/admin_schedule', [
+            'title'   => 'Tambah Jadual Payout',
+            'plans'   => $plans,
+            'plan'    => $plan,
+            'members' => $members,
+        ]);
+    }
+
     /** Admin: create a payout schedule row. */
     public function createSchedule(): void
     {
@@ -58,6 +82,7 @@ final class PayoutController extends Controller
         if (!hash_equals((string) ($_SESSION['csrf_token'] ?? ''), $token)) {
             set_flash('error', 'Sesi tidak sah. Sila cuba lagi.');
             $this->redirect('/admin/payouts');
+
         }
 
         $planId = (int) ($_POST['plan_id'] ?? 0);

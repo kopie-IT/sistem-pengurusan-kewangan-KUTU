@@ -104,3 +104,55 @@ if (!function_exists('format_money')) {
         return $symbol . number_format((float) $amount, 2);
     }
 }
+
+if (!function_exists('brand_name')) {
+    /**
+     * Resolves the configured application name with a sensible fallback.
+     * Cached per-request to avoid repeated DB lookups.
+     */
+    function brand_name(): string
+    {
+        static $cache = null;
+        if ($cache !== null) {
+            return $cache;
+        }
+        try {
+            $repo = new \App\Repositories\AppSettingRepository();
+            $name = $repo->get('app_name', 'Sistem Pengurusan Main Kutu');
+            $cache = $name !== null && $name !== '' ? $name : 'Sistem Pengurusan Main Kutu';
+        } catch (\Throwable $e) {
+            $cache = 'Sistem Pengurusan Main Kutu';
+        }
+        return $cache;
+    }
+}
+
+if (!function_exists('brand_logo_url')) {
+    /**
+     * Public URL for the configured brand logo, or null if none.
+     */
+    function brand_logo_url(): ?string
+    {
+        try {
+            $repo = new \App\Repositories\AppSettingRepository();
+            $stored = $repo->get('logo_path');
+            return ($stored !== null && $stored !== '') ? '/brand/logo' : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+}
+
+if (!function_exists('brand_initials')) {
+    /**
+     * Two-letter initials derived from the brand name. Used as a fallback
+     * when no logo has been uploaded.
+     */
+    function brand_initials(): string
+    {
+        $name = brand_name();
+        $clean = preg_replace('/\s+/u', '', (string) $name) ?? '';
+        $initials = strtoupper(substr($clean, 0, 2));
+        return $initials !== '' ? $initials : 'MK';
+    }
+}

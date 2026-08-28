@@ -13,19 +13,23 @@
 </head>
 <body>
     <?php
-    $authenticated = !empty($_SESSION['user_id']);
-    $currentUser = $_SESSION['user_name'] ?? '';
-    $isAdmin = in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin', 'staff'], true);
-    $homeUrl = $isAdmin ? '/admin' : '/dashboard';
-    ?>
-    <div class="app-shell">
-        <header class="app-header">
-            <div class="container">
-                <nav class="nav" aria-label="Navigasi utama">
-                    <a href="<?= url($authenticated ? $homeUrl : '/') ?>" class="nav-brand">
-                        <span class="nav-brand-mark" aria-hidden="true">MK</span>
-                        <span>Main Kutu</span>
-                    </a>
+$authenticated = !empty($_SESSION['user_id']);
+$currentUser = $_SESSION['user_name'] ?? '';
+$isAdmin = in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin', 'staff'], true);
+$homeUrl = $isAdmin ? '/admin' : '/dashboard';
+
+$brandName    = brand_name();
+$brandLogoUrl = brand_logo_url();
+$brandInitials = brand_initials();
+?>
+<div class="app-shell">
+    <header class="app-header">
+        <div class="container">
+            <nav class="nav" aria-label="Navigasi utama">
+                <a href="<?= url($authenticated ? $homeUrl : '/') ?>" class="nav-brand">
+                    <?= partial('brand', ['logoUrl' => $brandLogoUrl, 'fallbackInitials' => $brandInitials]) ?>
+                    <span><?= e($brandName) ?></span>
+                </a>
                     <?php if (!$authenticated): ?>
                         <div class="nav-links" role="menubar">
                             <a href="<?= url('/') ?>" class="nav-link" role="menuitem">Utama</a>
@@ -69,7 +73,7 @@
             <footer class="app-footer">
                 <div class="container">
                     <div class="footer-grid">
-                        <div class="footer-brand"><a href="<?= url('/') ?>" class="nav-brand" style="color:#fff;"><span class="nav-brand-mark" aria-hidden="true">MK</span><span style="color:#fff;">Sistem Main Kutu</span></a><p>Platform pengurusan Main Kutu yang moden, telus dan selamat untuk komuniti anda.</p></div>
+                        <div class="footer-brand"><a href="<?= url('/') ?>" class="nav-brand" style="color:#fff;"><?= partial('brand', ['logoUrl' => $brandLogoUrl, 'fallbackInitials' => $brandInitials]) ?><span style="color:#fff;"><?= e($brandName) ?></span></a><p><?= e((new \App\Repositories\AppSettingRepository())->get('brand_tagline', 'Platform pengurusan Main Kutu yang moden, telus dan selamat untuk komuniti anda.')) ?></p></div>
                         <div class="footer-links"><h4>Produk</h4><ul><li><a href="<?= url('/#features') ?>">Ciri</a></li><li><a href="<?= url('/#how') ?>">Bagaimana</a></li></ul></div>
                         <div class="footer-links"><h4>Sokongan</h4><ul><li><a href="#">Bantuan</a></li><li><a href="#">Hubungi Kami</a></li><li><a href="#">FAQ</a></li></ul></div>
                         <div class="footer-links"><h4>Legal</h4><ul><li><a href="#">Terma</a></li><li><a href="#">Privasi</a></li><li><a href="#">Keselamatan</a></li></ul></div>

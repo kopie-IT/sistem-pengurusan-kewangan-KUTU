@@ -167,3 +167,49 @@ $val = fn(string $k) => old($k, $plan->$k ?? '');
                 </div>
             </form>
         </div>
+
+        <?php if ($isEdit): ?>
+            <?php
+                $systemQr = (new \App\Repositories\AppSettingRepository())->get('payment_qr_path');
+                $planQr   = $plan->paymentQrPath ?? null;
+            ?>
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h2 class="card-heading">QR Pembayaran Pelan</h2>
+                    <p class="muted">Ahli akan melihat QR ini pada halaman pelan untuk membuat pembayaran dan muat naik slip.</p>
+
+                    <div class="qr-uploader">
+                        <div class="qr-preview" aria-live="polite">
+                            <?php if ($planQr): ?>
+                                <img src="<?= url('/plans/' . $plan->id . '/qr') ?>" alt="QR pelan semasa">
+                            <?php elseif ($systemQr): ?>
+                                <img src="<?= url('/brand/qr') ?>" alt="QR sistem semasa">
+                            <?php else: ?>
+                                <span class="qr-empty">Tiada QR ditetapkan</span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="qr-fields">
+                            <form method="POST" action="<?= url('/admin/plans/' . $plan->id . '/qr') ?>" enctype="multipart/form-data" novalidate>
+                                <?= csrf_field() ?>
+                                <div class="form-group">
+                                    <label class="form-label" for="payment_qr_<?= (int) $plan->id ?>">Muat Naik QR Baharu</label>
+                                    <input type="file" id="payment_qr_<?= (int) $plan->id ?>" name="payment_qr"
+                                           accept="image/png,image/jpeg,image/svg+xml,image/webp" class="form-control">
+                                    <p class="form-help">PNG, JPG, SVG, WEBP. Maksimum 2 MB.</p>
+                                </div>
+                                <div class="flex flex-wrap" style="gap: 0.5rem; align-items: center;">
+                                    <button type="submit" class="btn btn-primary">Simpan QR</button>
+                                    <?php if ($planQr): ?>
+                                        <button type="submit" name="remove_qr" value="1" class="btn btn-ghost"
+                                                onclick="return confirm('Buang QR pelan ini?');">Buang QR</button>
+                                    <?php endif; ?>
+                                </div>
+                                <?php if (!$planQr && $systemQr): ?>
+                                    <p class="form-help" style="margin-top:0.5rem;">Pelan ini belum ada QR khusus — ahli akan nampak QR sistem.</p>
+                                <?php endif; ?>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>

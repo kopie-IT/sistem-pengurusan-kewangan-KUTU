@@ -30,6 +30,7 @@ final class Plan
         public string $minScore,
         public ?int $createdBy,
         public string $createdAt,
+        public ?string $paymentQrPath = null,
     ) {}
 
     public static function fromRow(array $row): self
@@ -58,6 +59,7 @@ final class Plan
             minScore: (string) ($row['min_score'] ?? 0),
             createdBy: isset($row['created_by']) ? (int) $row['created_by'] : null,
             createdAt: $row['created_at'],
+            paymentQrPath: $row['payment_qr_path'] ?? null,
         );
     }
 }

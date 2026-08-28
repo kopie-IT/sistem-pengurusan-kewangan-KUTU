@@ -63,5 +63,29 @@
                 <?php endif; ?>
             </div>
         </div>
+
+        <?php
+            $systemQr = (new \App\Repositories\AppSettingRepository())->get('payment_qr_path');
+            $planQr   = $plan->paymentQrPath ?? null;
+            $hasQr    = ($planQr !== null && $planQr !== '') || ($systemQr !== null && $systemQr !== '');
+        ?>
+        <?php if ($hasQr && $alreadyMember && $memberStatus === 'active'): ?>
+            <div class="card mt-4">
+                <div class="card-body">
+                    <div class="qr-public">
+                        <?php if ($planQr): ?>
+                            <img src="<?= url('/plans/' . $plan->id . '/qr') ?>" alt="QR pembayaran pelan">
+                        <?php else: ?>
+                            <img src="<?= url('/brand/qr') ?>" alt="QR pembayaran sistem">
+                        <?php endif; ?>
+                        <div class="qr-public-text">
+                            <h4>QR Pembayaran <?= e($plan->name) ?></h4>
+                            <p>Imbas QR ini untuk membuat bayaran, kemudian muat naik slip pada halaman Bayaran.</p>
+                            <a href="<?= url('/payments') ?>" class="btn btn-primary mt-3">Muat Naik Slip Bayaran</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
     </div>
 </section>

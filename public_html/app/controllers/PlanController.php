@@ -198,6 +198,103 @@ final class PlanController extends Controller
         $this->redirect('/admin/plans');
     }
 
+    /**
+     * Upload/replace/remove the QR code for a plan.
+     *
+     * Validates the same image constraints as the brand logo (PNG/JPG/SVG/WEBP,
+     * ≤2 MB) and stores the file under `storage/uploads/brand/`. Persists the
+     * stored filename on `plans.payment_qr_path`. When the plan has no QR the
+     * public viewer falls back to the system-wide payment QR.
+     */
+    public function updateQr(int $id): void
+    {
+        $token = (string) ($_POST['csrf_token'] ?? '');
+        if (!hash_equals((string) ($_SESSION['csrf_token'] ?? ''), $token)) {
+            set_flash('error', 'Sesi tidak sah. Sila cuba lagi.');
+            $this->redirect('/admin/plans/' . $id . '/edit');
+        }
+
+        $plan = $this->plans->find($id);
+        if ($plan === null) {
+            set_flash('error', 'Pelan tidak dijumpai.');
+            $this->redirect('/admin/plans');
+        }
+
+        $pdo = \App\Core\Database::connection();
+        $currentQr = (string) ($plan->paymentQrPath ?? '');
+
+        if (isset($_POST['remove_qr']) && $currentQr !== '') {
+            $this->deletePlanQrFile($currentQr);
+            $pdo->prepare('UPDATE plans SET payment_qr_path = NULL, updated_at = NOW() WHERE id = :id')
+                ->execute([':id' => $id]);
+            set_flash('success', 'QR pelan telah dibuang.');
+            $this->redirect('/admin/plans/' . $id . '/edit');
+        }
+
+        $file = $_FILES['payment_qr'] ?? null;
+        if ($file === null || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            set_flash('warning', 'Tiada fail QR dipilih.');
+            $this->redirect('/admin/plans/' . $id . '/edit');
+        }
+
+        if (!is_uploaded_file($file['tmp_name'])) {
+            set_flash('error', 'Fail QR tidak sah.');
+            $this->redirect('/admin/plans/' . $id . '/edit');
+        }
+        if ((int) $file['size'] > 2 * 1024 * 1024) {
+            set_flash('error', 'Saiz QR melebihi had 2 MB.');
+            $this->redirect('/admin/plans/' . $id . '/edit');
+        }
+
+        $ext  = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        $allowedExt  = ['png', 'jpg', 'jpeg', 'svg', 'webp'];
+        $allowedMime = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'];
+        if (!in_array($ext, $allowedExt, true) || !in_array($mime, $allowedMime, true)) {
+            set_flash('error', 'Jenis fail QR tidak dibenarkan (png, jpg, svg, webp).');
+            $this->redirect('/admin/plans/' . $id . '/edit');
+        }
+
+        $dir = APP_ROOT . '/storage/uploads/brand/';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        $stored = 'qr_plan' . $id . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $dest = $dir . $stored;
+        if (!move_uploaded_file($file['tmp_name'], $dest)) {
+            set_flash('error', 'Gagal menyimpan QR.');
+            $this->redirect('/admin/plans/' . $id . '/edit');
+        }
+
+        if ($currentQr !== '' && $currentQr !== $stored) {
+            $this->deletePlanQrFile($currentQr);
+        }
+
+        $pdo->prepare('UPDATE plans SET payment_qr_path = :qr, updated_at = NOW() WHERE id = :id')
+            ->execute([':qr' => $stored, ':id' => $id]);
+
+        \App\Services\AuditService::log('plan.qr.updated', (int) ($_SESSION['user_id'] ?? 0), 'plan', $id, [
+            'qr_changed' => true,
+        ]);
+
+        set_flash('success', 'QR pelan berjaya dikemaskini.');
+        $this->redirect('/admin/plans/' . $id . '/edit');
+    }
+
+    private function deletePlanQrFile(string $storedName): void
+    {
+        if (!preg_match('/^[A-Za-z0-9._-]+$/', $storedName)) {
+            return;
+        }
+        if (!str_starts_with($storedName, 'qr_')) {
+            return;
+        }
+        $path = APP_ROOT . '/storage/uploads/brand/' . $storedName;
+        if (is_file($path)) {
+            @unlink($path);
+        }
+    }
+
     public function generateSchedules(int $id): void
     {
         $token = (string) ($_POST['csrf_token'] ?? '');

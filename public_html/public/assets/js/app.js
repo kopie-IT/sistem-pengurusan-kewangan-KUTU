@@ -112,6 +112,86 @@
     }
 
     // ----------------------------------------------------------------------
+    // Sidebar collapse / expand with persistent state
+    // ----------------------------------------------------------------------
+    function initSidebarCollapse() {
+        var sidebar = document.querySelector('[data-sidebar]');
+        if (!sidebar) return;
+
+        var STORAGE_KEY = 'mk:sidebar:groups:v1';
+        var stored = {};
+        try {
+            stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || '{}') || {};
+        } catch (err) {
+            stored = {};
+        }
+
+        var groups = sidebar.querySelectorAll('[data-group]');
+        groups.forEach(function (group) {
+            var key = group.getAttribute('data-group-key') || '';
+            var button = group.querySelector('[data-group-toggle]');
+            var children = group.querySelector('.app-nav-children');
+            if (!button || !children) return;
+
+            // Default state: open unless user previously collapsed it.
+            var defaultOpen = group.getAttribute('data-default-open') === 'true';
+            var open = stored[key] !== undefined ? stored[key] === true : defaultOpen;
+
+            applyState(group, button, children, open);
+
+            button.addEventListener('click', function () {
+                var isOpen = button.getAttribute('aria-expanded') === 'true';
+                var next = !isOpen;
+                applyState(group, button, children, next);
+                stored[key] = next;
+                try {
+                    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+                } catch (err) {
+                    /* storage may be disabled — ignore */
+                }
+            });
+        });
+
+        // Always keep the group containing the active route open so users
+        // never land on a hidden item.
+        var activeKey = sidebar.getAttribute('data-active-group');
+        if (activeKey) {
+            var activeGroup = sidebar.querySelector('[data-group-key="' + activeKey + '"]');
+            if (activeGroup) {
+                var btn = activeGroup.querySelector('[data-group-toggle]');
+                var child = activeGroup.querySelector('.app-nav-children');
+                if (btn && child) {
+                    applyState(activeGroup, btn, child, true);
+                }
+            }
+        }
+    }
+
+    function applyState(group, button, children, open) {
+        button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        group.classList.toggle('is-open', open);
+        group.classList.toggle('is-collapsed', !open);
+        if (open) {
+            children.style.maxHeight = children.scrollHeight + 'px';
+            children.style.overflow = 'hidden';
+            // After transition, clear inline height so dynamic content can size naturally.
+            setTimeout(function () {
+                if (button.getAttribute('aria-expanded') === 'true') {
+                    children.style.maxHeight = '';
+                    children.style.overflow = '';
+                }
+            }, 260);
+        } else {
+            // Set explicit height first so the transition has a starting value.
+            children.style.maxHeight = children.scrollHeight + 'px';
+            // Force reflow.
+            void children.offsetHeight;
+            children.style.overflow = 'hidden';
+            children.style.maxHeight = '0px';
+        }
+    }
+
+    // ----------------------------------------------------------------------
     // Boot
     // ----------------------------------------------------------------------
     document.addEventListener('DOMContentLoaded', function () {
@@ -120,5 +200,6 @@
         initForms();
         initPasswordToggle();
         highlightActiveNav();
+        initSidebarCollapse();
     });
 })();

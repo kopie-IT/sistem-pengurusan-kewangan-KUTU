@@ -33,6 +33,7 @@ $icon = static function (string $key): string {
         'report'    => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/>',
         'credit'    => '<path d="M12 2 4 5v6c0 5 3.41 9.74 8 11 4.59-1.26 8-6 8-11V5l-8-3z"/>',
         'score'     => '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/>',
+        'settings'  => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
     ];
     $d = $paths[$key] ?? $paths['dashboard'];
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $d . '</svg>';
@@ -77,6 +78,12 @@ if ($isAdmin) {
             'label' => null,
             'items' => [
                 ['label' => 'Skor Kredit', 'url' => '/admin/credit-scores', 'icon' => 'credit'],
+            ],
+        ],
+        [
+            'label' => 'Sistem',
+            'items' => [
+                ['label' => 'Tetapan', 'url' => '/admin/settings', 'icon' => 'settings'],
             ],
         ],
     ];
@@ -126,15 +133,51 @@ if ($isAdmin) {
         ],
     ];
 }
+
+// Build a stable group key for each label so JS can persist collapse state.
+$groupKey = static function (int $index, ?string $label) use ($sideTitle): string {
+    $base = $label !== null && $label !== ''
+        ? strtolower(preg_replace('/[^a-z0-9]+/i', '-', $label) ?? '')
+        : 'flat';
+    return $sideTitle . ':' . $index . ':' . trim((string) $base, '-');
+};
+
+// Compute the "containing group" for the active route so we can auto-expand
+// the right group when navigating via direct URL or refresh.
+$activeGroupKey = null;
+foreach ($groups as $gIndex => $group) {
+    foreach ($group['items'] as $item) {
+        if ($isActive($item['url'])) {
+            $activeGroupKey = $groupKey($gIndex, $group['label']);
+            break 2;
+        }
+    }
+}
 ?>
-<aside class="app-sidebar">
+<aside class="app-sidebar" data-sidebar data-active-group="<?= e((string) $activeGroupKey) ?>">
     <div class="side-title"><?= e($sideTitle) ?></div>
     <nav class="app-nav" aria-label="Navigasi <?= e($sideTitle) ?>">
-        <?php foreach ($groups as $group): ?>
+        <?php foreach ($groups as $gIndex => $group):
+            $gKey = $groupKey($gIndex, $group['label']);
+            $collapsible = $group['label'] !== null && count($group['items']) > 1;
+        ?>
             <?php if ($group['label'] !== null): ?>
-                <div class="app-nav-group">
-                    <div class="app-nav-label"><?= e($group['label']) ?></div>
-                    <div class="app-nav-children">
+                <div class="app-nav-group"
+                     data-group
+                     data-group-key="<?= e($gKey) ?>"
+                     data-default-open="<?= $collapsible && $gKey === $activeGroupKey ? 'true' : ($collapsible ? 'true' : 'false') ?>">
+                    <button type="button"
+                            class="app-nav-toggle"
+                            data-group-toggle
+                            aria-expanded="<?= $collapsible ? 'true' : 'false' ?>"
+                            aria-controls="grp-<?= e($gKey) ?>"
+                            <?= $collapsible ? '' : 'disabled' ?>>
+                        <span class="app-nav-label"><?= e($group['label']) ?></span>
+                        <?php if ($collapsible): ?>
+                            <svg class="app-nav-caret" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                        <?php endif; ?>
+                    </button>
+                    <div id="grp-<?= e($gKey) ?>" class="app-nav-children" role="group">
                         <?php foreach ($group['items'] as $item): ?>
                             <a href="<?= e(url($item['url'])) ?>"
                                class="<?= $isActive($item['url']) ? 'is-active' : '' ?>">

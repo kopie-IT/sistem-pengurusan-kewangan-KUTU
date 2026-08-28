@@ -8,6 +8,51 @@ Format mengikut Keep a Changelog.
 
 ## [Unreleased]
 
+### Added - Admin Settings, Brand & QR Management
+- Halaman `/admin/settings` untuk pentadbir mengurus **nama sistem**, **tagline**, **logo**, dan **QR pembayaran** dengan pratonton masa nyata.
+- `AdminSettingsController` mengendalikan muat naik logo + QR sistem (PNG/JPG/SVG/WEBP, ≤2 MB), penyingkiran, dan audit.
+- Pengemaskinian storan: jadual `app_settings` (`app_name`, `brand_tagline`, `logo_path`, `payment_qr_path`).
+- QR khusus pelan: kolum `plans.payment_qr_path` ditambah; admin boleh memuat naik/ membuang QR setiap pelan dari `/admin/plans/{id}/edit`. Ahli lihat QR khusus pelan pada halaman pelan, dan boleh memuat naik slip selepas mengimbas.
+- Laluan awam untuk aset brand: `/brand/logo`, `/brand/qr`, `/plans/{id}/qr` (tiga-tiga disiarkan dengan Content-Type dan Cache-Control yang sesuai).
+- `PlanController::updateQr()` mengendalikan upload/remove per-plan dengan audit `plan.qr.updated`.
+- Helper `brand_name()`, `brand_logo_url()`, `brand_initials()` untuk kegunaan global + partial `partials/brand.php`.
+- Semua halaman auth (`login`, `register`, `forgot-password`, `reset-password`) + header authenticated, footer, dan paparan brand kini konsisten menggunakan identiti yang dikonfigurasi.
+
+### Added - Sidebar Expand/Collapse
+- Kumpulan sidebar kini boleh dilipat/dibuka dengan butang toggle dan penjagaan state `localStorage` (`mk:sidebar:groups:v1`).
+- Kumpulan yang mengandungi laluan aktif sentiasa dibuka supaya item aktif tidak tersembunyi selepas navigasi langsung.
+- Penanda `data-group-key` + `data-active-group` untuk kebolehcapaian (`aria-expanded`, `aria-controls`).
+- Gaya CSS baru untuk butang toggle, animasi max-height (250ms ease-in-out) dan penjagaan penumpukan CSS hierarki.
+
+### Fixed
+- `FileController::view(int)` ditukar kepada `FileController::download(int)` supaya tidak bertindih dengan `Controller::view(string, array)`. Route `/file/slip/{id}` dikemas kini. (Sebelum ini latent — tidak aktif sehingga laluan brand ditambahkan.)
+
+### Database Changes
+```sql
+CREATE TABLE IF NOT EXISTS `app_settings` (
+    `key`        VARCHAR(100) NOT NULL,
+    `value`      TEXT NULL,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `app_settings` (`key`, `value`) VALUES
+    ('app_name', 'Sistem Pengurusan Main Kutu'),
+    ('brand_tagline', 'Platform pengurusan Main Kutu yang moden, telus dan selamat.'),
+    ('logo_path', NULL),
+    ('payment_qr_path', NULL);
+
+ALTER TABLE `plans`
+    ADD COLUMN IF NOT EXISTS `payment_qr_path` VARCHAR(255) NULL DEFAULT NULL AFTER `admin_fee_percent`;
+```
+
+### Fixed - Payouts Schedule GET
+- `/admin/payouts/schedule` (GET) sebelum ini mengembalikan 404 kerana hanya laluan POST didaftarkan. Laluan GET ditambah dengan view `payouts/admin_schedule.php` (borang untuk pilih pelan, ahli, tarikh, jumlah).
+
+---
+
+## [Unreleased]
+
 ### Changed - Dashboard & Application UI
 - Dashboard pentadbir (`/admin`) kini menjadi pusat ringkasan operasi: metrik pelan, ahli, semakan pembayaran, caruman tertunggak, tindakan keutamaan, dan aliran dana.
 - Menu `Laporan` kini hanya memaparkan Kewangan, Pelan, dan Ahli; pautan `Papan Pemuka` telah dibuang.

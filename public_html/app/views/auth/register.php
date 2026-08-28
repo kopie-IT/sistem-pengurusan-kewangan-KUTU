@@ -1,8 +1,8 @@
 <div class="auth-shell">
     <aside class="auth-aside" aria-label="Branding">
         <a href="<?= url('/') ?>" class="brand">
-            <span class="nav-brand-mark" aria-hidden="true">MK</span>
-            <span>Sistem Main Kutu</span>
+            <?= partial('brand', ['logoUrl' => brand_logo_url(), 'fallbackInitials' => brand_initials()]) ?>
+            <span><?= e(brand_name()) ?></span>
         </a>
 
         <div class="content">
@@ -16,14 +16,14 @@
             </ul>
         </div>
 
-        <p class="meta">&copy; <?= date('Y') ?> Sistem Pengurusan Main Kutu</p>
+        <p class="meta">&copy; <?= date('Y') ?> <?= e(brand_name()) ?></p>
     </aside>
 
     <section class="auth-main">
         <div class="auth-card">
             <a href="<?= url('/') ?>" class="auth-brand-mobile">
-                <span class="nav-brand-mark" aria-hidden="true">MK</span>
-                <span>Main Kutu</span>
+                <?= partial('brand', ['logoUrl' => brand_logo_url(), 'fallbackInitials' => brand_initials()]) ?>
+                <span><?= e(brand_name()) ?></span>
             </a>
 
             <h1>Daftar akaun</h1>

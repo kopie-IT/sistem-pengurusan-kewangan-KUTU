@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Repositories\AppSettingRepository;
 use App\Repositories\MemberRepository;
 use App\Repositories\PaymentSlipRepository;
 use App\Services\AuthService;
@@ -28,9 +29,10 @@ final class FileController extends Controller
         private AuthService $auth,
         private PaymentSlipRepository $slips,
         private MemberRepository $members,
+        private AppSettingRepository $settings,
     ) {}
 
-    public function view(int $slipId): void
+    public function download(int $slipId): void
     {
         if (!$this->auth->isAuthenticated()) {
             $this->redirect('/login');
@@ -86,6 +88,67 @@ final class FileController extends Controller
     {
         http_response_code(404);
         echo 'Fail tidak dijumpai.';
+        exit;
+    }
+
+    /**
+     * Public route: stream the configured brand logo.
+     * No authentication is required so login / public pages can render it.
+     */
+    public function brandLogo(): void
+    {
+        $this->streamBrandAsset((string) ($this->settings->get('logo_path') ?? ''));
+    }
+
+    /**
+     * Public route: stream the system-wide payment QR.
+     * No authentication is required so login / public pages can render it.
+     */
+    public function brandQr(): void
+    {
+        $this->streamBrandAsset((string) ($this->settings->get('payment_qr_path') ?? ''));
+    }
+
+    /**
+     * Public route: stream a plan-specific payment QR.
+     * Falls back to the system-wide QR if the plan has none configured.
+     */
+    public function planQr(int $planId): void
+    {
+        $plan = (new \App\Repositories\PlanRepository())->findById($planId);
+        if ($plan === null) {
+            $this->notFound();
+        }
+        $stored = (string) ($plan->paymentQrPath ?? '');
+        if ($stored === '') {
+            $stored = (string) ($this->settings->get('payment_qr_path') ?? '');
+        }
+        $this->streamBrandAsset($stored);
+    }
+
+    private function streamBrandAsset(string $stored): void
+    {
+        if ($stored === '' || !preg_match('/^[A-Za-z0-9._-]+$/', $stored)) {
+            $this->notFound();
+        }
+        $path = APP_ROOT . '/storage/uploads/brand/' . $stored;
+        if (!is_file($path)) {
+            $this->notFound();
+        }
+        $ext  = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mime = match ($ext) {
+            'png'      => 'image/png',
+            'jpg',
+            'jpeg'     => 'image/jpeg',
+            'svg'      => 'image/svg+xml',
+            'webp'     => 'image/webp',
+            default    => 'application/octet-stream',
+        };
+        header('Content-Type: ' . $mime);
+        header('Content-Length: ' . filesize($path));
+        header('Cache-Control: public, max-age=3600');
+        header('X-Content-Type-Options: nosniff');
+        readfile($path);
         exit;
     }
 }
