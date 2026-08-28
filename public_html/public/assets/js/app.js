@@ -80,6 +80,24 @@
     }
 
     // ----------------------------------------------------------------------
+    // Password visibility toggle
+    // ----------------------------------------------------------------------
+    function initPasswordToggle() {
+        var buttons = document.querySelectorAll('[data-password-toggle]');
+        buttons.forEach(function (btn) {
+            var input = document.getElementById(btn.getAttribute('data-password-toggle'));
+            if (!input) return;
+            btn.addEventListener('click', function () {
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+                btn.setAttribute('aria-label', show ? 'Sembunyi kata laluan' : 'Papar kata laluan');
+                btn.classList.toggle('is-visible', show);
+            });
+        });
+    }
+
+    // ----------------------------------------------------------------------
     // Active nav link highlight based on current path
     // ----------------------------------------------------------------------
     function highlightActiveNav() {
