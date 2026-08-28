@@ -101,9 +101,14 @@ $router->get('/credit-score', [CreditScoreController::class, 'memberShow'], 'cre
 $router->get('/calendar/contribution',       [CalendarController::class, 'contribution'], 'calendar.contribution', $auth);
 $router->get('/calendar/payout',             [CalendarController::class, 'payout'], 'calendar.payout', $auth);
 
-// Profile (member)
+// Profile (any authenticated user — member, staff, admin, super_admin)
 $router->get('/profile',  [ProfileController::class, 'index'], 'profile', $auth);
 $router->post('/profile', [ProfileController::class, 'update'], null, $auth);
+$router->get('/profile/change-password',  [ProfileController::class, 'changePassword'], 'profile.change-password', $auth);
+$router->post('/profile/change-password', [ProfileController::class, 'updatePassword'], null, $auth);
+
+// Authenticated avatar streaming (owner-or-admin via FileController).
+$router->get('/file/avatar/{id}', [FileController::class, 'userAvatar'], 'file.avatar', $auth);
 
 // Notifications
 $router->get('/notifications',            [NotificationController::class, 'index'], 'notifications', $auth);

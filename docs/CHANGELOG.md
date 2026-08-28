@@ -8,6 +8,24 @@ Format mengikut Keep a Changelog.
 
 ## [Unreleased]
 
+### Added - Avatar & Profile Menu in Header
+- Header authenticated kini memaparkan butang avatar (atau gelembung inisial jika tiada avatar) di sebelah kanan, dengan menu dropdown: **Kemaskini Profil**, **Tukar Kata Laluan**, dan **Log Keluar**.
+- Fungsi `user_avatar_url($userId)` dan `user_initials($name)` ditambah dalam `app/helpers/functions.php` untuk kegunaan global (header, mobile menu, halaman profil).
+- Mobile menu juga memaparkan avatar + nama + peranan di bahagian atas, disusuli pautan Dashboard, Pemberitahuan, Profil, Tukar Kata Laluan, Log Keluar.
+
+### Added - User Profile (Personal Info + Avatar Upload)
+- Halaman `/profile` dibina semula:
+  - **Muat naik avatar** (PNG / JPG / WebP / GIF, ≤ 2 MB) dengan pratonton masa nyata sebelum simpan.
+  - **Nama penuh**, **nombor telefon** (validasi format MY), **no. KP** (jika ahli), **alamat** (jika ahli) — semua dengan validasi panjang & format.
+- Halaman baharu `/profile/change-password` dengan tiga medan (kata laluan semasa, baru, pengesahan), validasi minimum 8 aksara, dan mata laluan yang mesti berbeza.
+- Avatar disimpan di `storage/uploads/avatars/` dengan konvensi nama `avatar_<userId>_<timestamp>_<rand>.<ext>`; avatar lama dipadam apabila diganti.
+- Laluan `/file/avatar/{id}` (auth-gated) — hanya pemilik avatar atau admin boleh melihat; mengakses avatar orang lain akan dapat 403.
+- Migration `006_user_avatar.sql` menambah kolum `users.avatar_path`.
+- `ProfileController` baharu: `index`, `update`, `changePassword`, `updatePassword` + `handleAvatarUpload` (validasi mime, saiz, extension).
+- `UserRepository::updateProfile()`, `updateAvatar()`, `getAvatarPath()` ditambah.
+- Audit `profile.updated` dan `profile.password.changed`.
+
+
 ### Added - Urus Pengguna (Admin & Staf)
 - Halaman `/admin/users` untuk admin/super_admin mengurus akaun pentadbiran dalaman (admin / super_admin / staff).
 - `UserManagementController` dengan senarai + cari, cipta, sunting (peranan & status), reset kata laluan sementara, dan padam.

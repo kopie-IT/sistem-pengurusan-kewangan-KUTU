@@ -156,3 +156,48 @@ if (!function_exists('brand_initials')) {
         return $initials !== '' ? $initials : 'MK';
     }
 }
+
+if (!function_exists('user_initials')) {
+    /**
+     * Two-letter initials for a user, suitable for the avatar fallback
+     * bubble. Prefers the first letter of the first two whitespace-separated
+     * words so "Ahmad bin Ali" → "AB".
+     */
+    function user_initials(?string $name): string
+    {
+        $name = trim((string) $name);
+        if ($name === '') {
+            return 'U';
+        }
+        $parts = preg_split('/\s+/u', $name) ?: [];
+        $first = strtoupper(substr($parts[0] ?? '', 0, 1));
+        $second = strtoupper(substr($parts[1] ?? '', 0, 1));
+        $initials = trim($first . $second);
+        if ($initials === '') {
+            $clean = preg_replace('/\s+/u', '', $name) ?? '';
+            $initials = strtoupper(substr($clean, 0, 2));
+        }
+        return $initials !== '' ? $initials : 'U';
+    }
+}
+
+if (!function_exists('user_avatar_url')) {
+    /**
+     * Public URL for the given user's avatar (auth-gated via /file/avatar/{id}).
+     * Returns null when no avatar has been uploaded so the caller can fall
+     * back to a coloured initials bubble.
+     */
+    function user_avatar_url(?int $userId): ?string
+    {
+        if ($userId === null || $userId <= 0) {
+            return null;
+        }
+        try {
+            $repo = new \App\Repositories\UserRepository();
+            $stored = $repo->getAvatarPath($userId);
+        } catch (\Throwable $e) {
+            return null;
+        }
+        return ($stored !== null && $stored !== '') ? '/file/avatar/' . $userId : null;
+    }
+}

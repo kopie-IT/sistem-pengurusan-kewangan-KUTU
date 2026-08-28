@@ -105,6 +105,34 @@ final class UserRepository
         return $row ? $this->hydrate($row) : null;
     }
 
+    public function updateProfile(int $userId, string $name, ?string $avatarPath = null): void
+    {
+        // Avatar is updated separately via updateAvatar(); here we just keep
+        // the basic textual profile fields in sync (currently just the name).
+        $stmt = Database::connection()->prepare(
+            'UPDATE users SET name = :name, updated_at = NOW() WHERE id = :id'
+        );
+        $stmt->execute([':name' => $name, ':id' => $userId]);
+    }
+
+    public function updateAvatar(int $userId, ?string $storedName): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE users SET avatar_path = :p, updated_at = NOW() WHERE id = :id'
+        );
+        $stmt->execute([':p' => $storedName, ':id' => $userId]);
+    }
+
+    public function getAvatarPath(int $userId): ?string
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT avatar_path FROM users WHERE id = :id LIMIT 1'
+        );
+        $stmt->execute([':id' => $userId]);
+        $v = $stmt->fetchColumn();
+        return ($v === false || $v === null || $v === '') ? null : (string) $v;
+    }
+
     public function findByEmail(string $email): ?User
     {
         $sql = 'SELECT u.*, r.slug AS role_slug

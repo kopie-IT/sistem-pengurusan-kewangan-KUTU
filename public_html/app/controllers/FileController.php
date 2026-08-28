@@ -126,6 +126,55 @@ final class FileController extends Controller
         $this->streamBrandAsset($stored);
     }
 
+    /**
+     * Authenticated route: stream a user's avatar. The viewer must either
+     * be the avatar's owner or an admin (admin / super_admin / staff).
+     * Used by the header dropdown and the profile page.
+     */
+    public function userAvatar(int $userId): void
+    {
+        if (!$this->auth->isAuthenticated()) {
+            $this->redirect('/login');
+        }
+
+        $currentUserId = (int) ($_SESSION['user_id'] ?? 0);
+        $isAdmin = $this->isAdmin();
+        if (!$isAdmin && $currentUserId !== $userId) {
+            $this->forbidden();
+        }
+
+        $stored = (new \App\Repositories\UserRepository())->getAvatarPath($userId);
+        if ($stored === null || $stored === '' || !preg_match('/^[A-Za-z0-9._-]+$/', $stored)) {
+            $this->notFound();
+        }
+        if (!str_starts_with($stored, 'avatar_')) {
+            $this->notFound();
+        }
+
+        $path = APP_ROOT . '/storage/uploads/avatars/' . $stored;
+        if (!is_file($path)) {
+            $this->notFound();
+        }
+
+        $ext  = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mime = match ($ext) {
+            'png'  => 'image/png',
+            'jpg',
+            'jpeg' => 'image/jpeg',
+            'webp' => 'image/webp',
+            'gif'  => 'image/gif',
+            'svg'  => 'image/svg+xml',
+            default => 'application/octet-stream',
+        };
+
+        header('Content-Type: ' . $mime);
+        header('Content-Length: ' . filesize($path));
+        header('Cache-Control: private, max-age=300');
+        header('X-Content-Type-Options: nosniff');
+        readfile($path);
+        exit;
+    }
+
     private function streamBrandAsset(string $stored): void
     {
         if ($stored === '' || !preg_match('/^[A-Za-z0-9._-]+$/', $stored)) {

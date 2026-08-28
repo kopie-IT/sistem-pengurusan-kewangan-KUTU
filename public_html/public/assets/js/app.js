@@ -286,6 +286,107 @@
     }
 
     // ----------------------------------------------------------------------
+    // User menu (header avatar dropdown)
+    // ----------------------------------------------------------------------
+    //
+    // The button toggles a popup menu (Profil, Tukar Kata Laluan, Log Keluar).
+    // Clicking outside, pressing Escape, or focusing an item that navigates
+    // away will close it. The dropdown uses the native `hidden` attribute
+    // for the initial state so it stays hidden even with JS disabled.
+    function initUserMenu() {
+        var menus = document.querySelectorAll('[data-user-menu]');
+        if (!menus.length) return;
+
+        function close(menu) {
+            var toggle = menu.querySelector('[data-user-menu-toggle]');
+            var dropdown = menu.querySelector('.user-dropdown');
+            if (!toggle || !dropdown) return;
+            dropdown.setAttribute('hidden', '');
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+
+        function open(menu) {
+            var toggle = menu.querySelector('[data-user-menu-toggle]');
+            var dropdown = menu.querySelector('.user-dropdown');
+            if (!toggle || !dropdown) return;
+            dropdown.removeAttribute('hidden');
+            toggle.setAttribute('aria-expanded', 'true');
+        }
+
+        menus.forEach(function (menu) {
+            var toggle = menu.querySelector('[data-user-menu-toggle]');
+            var dropdown = menu.querySelector('.user-dropdown');
+            if (!toggle || !dropdown) return;
+
+            toggle.addEventListener('click', function (event) {
+                event.stopPropagation();
+                var isOpen = toggle.getAttribute('aria-expanded') === 'true';
+                // Close every other open menu first.
+                menus.forEach(close);
+                if (!isOpen) {
+                    open(menu);
+                }
+            });
+
+            // Close when an item is activated so the visual state matches
+            // the navigation transition (also useful for keyboard users).
+            dropdown.querySelectorAll('.user-dropdown-item').forEach(function (item) {
+                item.addEventListener('click', function () { close(menu); });
+            });
+        });
+
+        // Outside click closes any open menu.
+        document.addEventListener('click', function (event) {
+            menus.forEach(function (menu) {
+                if (menu.contains(event.target)) return;
+                close(menu);
+            });
+        });
+
+        // Escape closes the most recently opened menu and returns focus.
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Escape') return;
+            menus.forEach(function (menu) {
+                var toggle = menu.querySelector('[data-user-menu-toggle]');
+                if (toggle && toggle.getAttribute('aria-expanded') === 'true') {
+                    close(menu);
+                    toggle.focus();
+                }
+            });
+        });
+    }
+
+    // ----------------------------------------------------------------------
+    // Profile avatar live preview
+    // ----------------------------------------------------------------------
+    //
+    // When the user picks a new file, swap the preview pane to an <img>
+    // pointing at a blob URL so they can see the result before saving.
+    function initAvatarPreview() {
+        var input = document.querySelector('[data-avatar-input]');
+        var preview = document.querySelector('[data-avatar-preview]');
+        if (!input || !preview) return;
+
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            if (!file) return;
+            if (!file.type || file.type.indexOf('image/') !== 0) return;
+
+            // Revoke the previous blob URL to avoid leaking memory.
+            if (preview._blobUrl) {
+                URL.revokeObjectURL(preview._blobUrl);
+            }
+            var url = URL.createObjectURL(file);
+            preview._blobUrl = url;
+            preview.innerHTML = '';
+            var img = document.createElement('img');
+            img.alt = 'Pratonton avatar';
+            img.src = url;
+            preview.appendChild(img);
+        });
+    }
+
+    // ----------------------------------------------------------------------
     // Boot
     // ----------------------------------------------------------------------
     document.addEventListener('DOMContentLoaded', function () {
@@ -296,5 +397,7 @@
         highlightActiveNav();
         initSidebarCollapse();
         initSettingsTabs();
+        initUserMenu();
+        initAvatarPreview();
     });
 })();

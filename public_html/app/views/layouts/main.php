@@ -14,13 +14,16 @@
 <body>
     <?php
 $authenticated = !empty($_SESSION['user_id']);
-$currentUser = $_SESSION['user_name'] ?? '';
-$isAdmin = in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin', 'staff'], true);
-$homeUrl = $isAdmin ? '/admin' : '/dashboard';
+$currentUser   = $_SESSION['user_name'] ?? '';
+$currentUserId = (int) ($_SESSION['user_id'] ?? 0);
+$isAdmin       = in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin', 'staff'], true);
+$homeUrl       = $isAdmin ? '/admin' : '/dashboard';
 
-$brandName    = brand_name();
-$brandLogoUrl = brand_logo_url();
-$brandInitials = brand_initials();
+$brandName      = brand_name();
+$brandLogoUrl   = brand_logo_url();
+$brandInitials  = brand_initials();
+$userAvatarUrl  = $authenticated ? user_avatar_url($currentUserId) : null;
+$userInitials   = user_initials($currentUser);
 ?>
 <div class="app-shell">
     <header class="app-header">
@@ -44,9 +47,43 @@ $brandInitials = brand_initials();
                         </div>
                     <?php else: ?>
                         <div class="nav-cta">
-                            <?php if ($currentUser !== ''): ?><span class="nav-user" title="<?= e($currentUser) ?>"><?= e($currentUser) ?></span><?php endif; ?>
                             <a href="<?= url('/notifications') ?>" class="btn btn-ghost" aria-label="Pemberitahuan">Makluman</a>
-                            <a href="<?= url('/logout') ?>" class="btn btn-primary">Log Keluar</a>
+
+                            <div class="user-menu" data-user-menu>
+                                <button type="button" class="user-avatar-btn"
+                                        id="userMenuToggle"
+                                        data-user-menu-toggle
+                                        aria-haspopup="menu"
+                                        aria-expanded="false"
+                                        aria-controls="userMenu"
+                                        aria-label="Menu akaun: <?= e($currentUser) ?>">
+                                    <?php if ($userAvatarUrl !== null): ?>
+                                        <img src="<?= e($userAvatarUrl) ?>" alt="" class="user-avatar-img" loading="lazy">
+                                    <?php else: ?>
+                                        <span class="user-avatar-bubble" aria-hidden="true"><?= e($userInitials) ?></span>
+                                    <?php endif; ?>
+                                </button>
+                                <div class="user-dropdown" id="userMenu" role="menu" aria-labelledby="userMenuToggle" hidden>
+                                    <div class="user-dropdown-header">
+                                        <div class="user-dropdown-name"><?= e($currentUser) ?></div>
+                                        <div class="user-dropdown-role"><?= e(ucfirst(str_replace('_', ' ', (string) ($_SESSION['user_role'] ?? 'pengguna')))) ?></div>
+                                    </div>
+                                    <a href="<?= url('/profile') ?>" class="user-dropdown-item" role="menuitem">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                        <span>Kemaskini Profil</span>
+                                    </a>
+                                    <a href="<?= url('/profile/change-password') ?>" class="user-dropdown-item" role="menuitem">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                        <span>Tukar Kata Laluan</span>
+                                    </a>
+                                    <div class="user-dropdown-separator" role="separator"></div>
+                                    <a href="<?= url('/logout') ?>" class="user-dropdown-item user-dropdown-item-danger" role="menuitem">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                                        <span>Log Keluar</span>
+                                    </a>
+                                </div>
+                            </div>
+
                             <button type="button" class="nav-toggle" id="navToggle" aria-label="Buka menu" aria-expanded="false" aria-controls="mobileMenu">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                             </button>
@@ -58,7 +95,22 @@ $brandInitials = brand_initials();
                         <?php if (!$authenticated): ?>
                             <a href="<?= url('/') ?>" role="menuitem">Utama</a><a href="<?= url('/#features') ?>" role="menuitem">Ciri</a><a href="<?= url('/#how') ?>" role="menuitem">Bagaimana</a><a href="<?= url('/login') ?>" role="menuitem">Log Masuk</a>
                         <?php else: ?>
-                            <a href="<?= url($homeUrl) ?>" role="menuitem"><?= $isAdmin ? 'Dashboard' : 'Papan Pemuka' ?></a><a href="<?= url('/notifications') ?>" role="menuitem">Makluman</a><a href="<?= url('/logout') ?>" role="menuitem">Log Keluar</a>
+                            <div class="mobile-menu-user">
+                                <?php if ($userAvatarUrl !== null): ?>
+                                    <img src="<?= e($userAvatarUrl) ?>" alt="" class="user-avatar-img" loading="lazy">
+                                <?php else: ?>
+                                    <span class="user-avatar-bubble" aria-hidden="true"><?= e($userInitials) ?></span>
+                                <?php endif; ?>
+                                <div>
+                                    <strong><?= e($currentUser) ?></strong>
+                                    <small><?= e(ucfirst(str_replace('_', ' ', (string) ($_SESSION['user_role'] ?? 'pengguna')))) ?></small>
+                                </div>
+                            </div>
+                            <a href="<?= url($homeUrl) ?>" role="menuitem"><?= $isAdmin ? 'Dashboard' : 'Papan Pemuka' ?></a>
+                            <a href="<?= url('/notifications') ?>" role="menuitem">Makluman</a>
+                            <a href="<?= url('/profile') ?>" role="menuitem">Kemaskini Profil</a>
+                            <a href="<?= url('/profile/change-password') ?>" role="menuitem">Tukar Kata Laluan</a>
+                            <a href="<?= url('/logout') ?>" role="menuitem">Log Keluar</a>
                         <?php endif; ?>
                     </div>
                 </div>
