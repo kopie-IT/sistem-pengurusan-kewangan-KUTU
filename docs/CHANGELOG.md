@@ -8,6 +8,40 @@ Format mengikut Keep a Changelog.
 
 ## [Unreleased]
 
+### Added - Urus Pengguna (Admin & Staf)
+- Halaman `/admin/users` untuk admin/super_admin mengurus akaun pentadbiran dalaman (admin / super_admin / staff).
+- `UserManagementController` dengan senarai + cari, cipta, sunting (peranan & status), reset kata laluan sementara, dan padam.
+- Pautan dari sidebar: **Sistem > Urus Pengguna** (admin/super_admin sahaja; staf tidak nampak).
+- Sekatan keselamatan: tidak boleh memadam super admin terakhir, tidak boleh menggantung diri sendiri, tidak boleh reset diri sendiri.
+- Audit: `user.admin.create`, `user.admin.update`, `user.admin.delete`, `user.admin.password_reset`.
+
+### Added - Dashboard Giliran Dapat Kutu
+- Kad baharu **"Giliran dapat kutu hari ini"** di dashboard pentadbir.
+- Menyenaraikan semua `payout_schedules` yang jatuh pada tarikh hari ini dan 7 hari akan datang, lengkap dengan nama penerima, pelan, kod ahli, dan jumlah payout.
+- Pengiraan jumlah hari ini + jumlah 7 hari (menggunakan BC Math).
+- Kad kosong dengan tarikh payout seterusnya jika tiada payout hari ini.
+
+### Added - Konfigurasi Email Blast + wap.net (Tetapan Sistem)
+- Halaman `/admin/settings` (admin/super_admin) ditambah 3 tab baharu:
+  - **Email Blast** — toggle aktif, dari nama/emel, reply-to, footer, subjek lalai.
+  - **wap.net (WhatsApp Gateway)** — toggle, API URL, API key, sender id, default template.
+  - **Operasi & Hubungan** — telefon & emel helpdesk sistem.
+- Borang composer **"Hantar Email Blast"** di bahagian bawah halaman tetapan untuk menghantar emel pukal dengan sasaran (semua / ahli / admin / super_admin / staff).
+- Setiap blast disimpan ke `email_blasts` (baru) dengan status `sent`/`partial`/`failed` dan salinan dihantar juga ke notifikasi dalam-app.
+- Migration `005_system_config.sql` menambah default rows untuk `system_settings` + jadual `email_blasts`.
+- Bahagian pratonton/cardboard dengan status integrasi terkini (logo, QR, email blast, wap.net).
+
+### Fixed - Sidebar highlight (hanya item aktif)
+- Item sidebar kini ditanda `is-active`/`aria-current="page"` hanya pada item yang persis dengan URL sekarang (sebelum ini `/admin` kekal menyala bila navigasi ke `/admin/plans`).
+- `app.js` `highlightActiveNav()` kini defensif: jika lebih dari satu sidebar item menyimpan `.is-active`, hanya yang URL-nya tepat disimpan.
+
+### Added - Lebih Banyak Data Sampel
+- `cron/seed_demo2.php` menambah 6 ahli tambahan (`faisal@`, `lina@`, `arif@`, `nadia@`, `khairul@`, `yusof@mainkutu.local`) dengan skor kredit 45–92.
+- Tambah pelan ketiga `PLN-KUTU3` (RM500 sebulan × 12 kitaran) dengan semua ahli didaftarkan.
+- Jana `payout_schedules` untuk setiap pelan/ahli dengan tarikh payout merebak dari hari ini sehingga +7 hari — supaya dashboard "Giliran dapat kutu" papar data realistik dengan serta-merta.
+- Welcome notification untuk ahli baharu.
+- Boleh dijalankan berulang (idempotent) — `php cron/seed_demo2.php`.
+
 ### Changed - Sidebar Accordion & Admin-Only Tetapan
 - **Sidebar accordion**: `initSidebarCollapse()` dalam `public/assets/js/app.js` kini berkelakuan seperti accordion — apabila pengguna membuka satu kumpulan, semua kumpulan lain akan tertutup dahulu. Kumpulan yang mengandungi laluan aktif kekal dibuka selepas navigasi langsung. State kekal disimpan di `localStorage` (`mk:sidebar:groups:v1`).
 - **Tetapan Sistem (admin sahaja)**: halaman `/admin/settings` (GET + POST) kini hanya boleh diakses oleh peranan `admin` dan `super_admin` (staf dihalang). Akses dikawal oleh gate baru `Authorize::class => 'super_admin'` dalam `app/routes/web.php` (middleware menerima `['admin', 'super_admin']` sahaja, tiada `staff`).

@@ -6,14 +6,21 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Repositories\AppSettingRepository;
+use App\Repositories\EmailBlastRepository;
 use App\Services\AuditService;
+use App\Services\EmailBlastService;
+use App\Services\SystemSettingService;
 
 /**
- * Admin-only settings page: app name, brand tagline, and logo upload.
+ * Admin-only configuration hub.
  *
- * Logo upload validates MIME / size / extension, then stores the file under
- * `storage/uploads/brand/`. The stored path is persisted in `app_settings`
- * so it can be served from public without exposing the storage directory.
+ * - Identity: app name, tagline, logo, system QR (persisted via `app_settings`).
+ * - Email blast toggle + From/Reply-To/Footer config + broadcast composer.
+ * - wap.net (WhatsApp gateway) toggle + API URL/key/sender/template.
+ * - General operation contact info.
+ *
+ * All settings live in `system_settings` so they can be queried cheaply from
+ * other services (e.g. notifications, mailers, contact pages).
  */
 final class AdminSettingsController extends Controller
 {
@@ -27,14 +34,20 @@ final class AdminSettingsController extends Controller
     private const MAX_BYTES    = 2 * 1024 * 1024; // 2 MB
 
     public function __construct(
-        private AppSettingRepository $settings,
+        private AppSettingRepository   $appSettings,
+        private SystemSettingService  $systemSettings,
+        private EmailBlastService     $blaster,
+        private EmailBlastRepository  $blasts,
     ) {}
 
     public function index(): void
     {
         $this->view('admin/settings', [
-            'title'    => 'Tetapan Sistem',
-            'settings' => $this->settings->all(),
+            'title'         => 'Tetapan Sistem',
+            'settings'      => $this->appSettings->all(),
+            'systemConfig'  => $this->systemSettings->all(),
+            'blasts'        => $this->blasts->all(20, 0),
+            'blastCount'    => $this->blasts->count(),
         ]);
     }
 
@@ -46,6 +59,7 @@ final class AdminSettingsController extends Controller
             $this->redirect('/admin/settings');
         }
 
+        // ----- Identity (text fields) ---------------------------------
         $appName = trim((string) ($_POST['app_name'] ?? ''));
         $tagline = trim((string) ($_POST['brand_tagline'] ?? ''));
         $removeLogo = isset($_POST['remove_logo']);
@@ -60,99 +74,85 @@ final class AdminSettingsController extends Controller
             $this->redirect('/admin/settings');
         }
 
-        $currentLogo = $this->settings->get('logo_path');
-        $currentQr   = $this->settings->get('payment_qr_path');
+        $currentLogo = $this->appSettings->get('logo_path');
+        $currentQr   = $this->appSettings->get('payment_qr_path');
 
-        // Persist text fields first.
-        $this->settings->set('app_name', $appName);
-        $this->settings->set('brand_tagline', $tagline !== '' ? $tagline : null);
+        $this->appSettings->set('app_name', $appName);
+        $this->appSettings->set('brand_tagline', $tagline !== '' ? $tagline : null);
 
-        // Handle logo removal.
         if ($removeLogo && $currentLogo) {
             $this->deleteBrandFile($currentLogo, 'logo');
-            $this->settings->set('logo_path', null);
+            $this->appSettings->set('logo_path', null);
             $currentLogo = null;
         }
 
-        // Handle QR removal.
         if ($removeQr && $currentQr) {
             $this->deleteBrandFile($currentQr, 'qr');
-            $this->settings->set('payment_qr_path', null);
+            $this->appSettings->set('payment_qr_path', null);
             $currentQr = null;
         }
 
-        // Handle logo upload.
-        $newLogoError = null;
-        if (!empty($_FILES['logo']) && ($_FILES['logo']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
-            $file = $_FILES['logo'];
+        // ----- Logo / QR upload (unchanged behaviour) -----------------
+        $newLogoError = $this->handleLogoUpload($currentLogo);
+        $newQrError   = $this->handleQrUpload($currentQr);
 
-            if (!is_uploaded_file($file['tmp_name'])) {
-                $newLogoError = 'Fail tidak sah.';
-            } elseif ((int) $file['size'] > self::MAX_BYTES) {
-                $newLogoError = 'Saiz logo melebihi had 2 MB.';
-            } else {
-                $ext  = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
-                $mime = mime_content_type($file['tmp_name']) ?: '';
-                if (!in_array($ext, self::ALLOWED_EXT, true) || !in_array($mime, self::ALLOWED_MIME, true)) {
-                    $newLogoError = 'Jenis fail tidak dibenarkan (png, jpg, svg, webp).';
-                } else {
-                    $dir = APP_ROOT . '/storage/uploads/brand/';
-                    if (!is_dir($dir)) {
-                        mkdir($dir, 0775, true);
-                    }
-                    $storedName = 'logo_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
-                    $dest = $dir . $storedName;
-                    if (!move_uploaded_file($file['tmp_name'], $dest)) {
-                        $newLogoError = 'Gagal menyimpan logo.';
-                    } else {
-                        if ($currentLogo && $currentLogo !== $storedName) {
-                            $this->deleteBrandFile($currentLogo, 'logo');
-                        }
-                        $this->settings->set('logo_path', $storedName);
-                    }
-                }
-            }
+        // ----- Email blast settings (system_settings) -----------------
+        $emailBlast = [
+            'email_blast_enabled'        => isset($_POST['email_blast_enabled']) ? '1' : '0',
+            'email_blast_from_name'      => trim((string) ($_POST['email_blast_from_name'] ?? '')),
+            'email_blast_from_email'     => trim((string) ($_POST['email_blast_from_email'] ?? '')),
+            'email_blast_reply_to'       => trim((string) ($_POST['email_blast_reply_to'] ?? '')),
+            'email_blast_footer'         => trim((string) ($_POST['email_blast_footer'] ?? '')),
+            'email_blast_default_subject' => trim((string) ($_POST['email_blast_default_subject'] ?? '')),
+        ];
+
+        if ($emailBlast['email_blast_from_email'] !== '' && !filter_var($emailBlast['email_blast_from_email'], FILTER_VALIDATE_EMAIL)) {
+            $emailBlast['email_blast_from_email'] = '';
+            set_flash('warning', 'Emel pengirim blast tidak sah; nilai dikosongkan.');
+        }
+        if ($emailBlast['email_blast_reply_to'] !== '' && !filter_var($emailBlast['email_blast_reply_to'], FILTER_VALIDATE_EMAIL)) {
+            $emailBlast['email_blast_reply_to'] = '';
+            set_flash('warning', 'Emel reply-to tidak sah; nilai dikosongkan.');
+        }
+        foreach ($emailBlast as $k => $v) {
+            $type = $k === 'email_blast_enabled' ? 'bool' : 'string';
+            $this->systemSettings->set($k, $v, $type);
         }
 
-        // Handle payment QR upload (system-wide default).
-        $newQrError = null;
-        if (!empty($_FILES['payment_qr']) && ($_FILES['payment_qr']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
-            $file = $_FILES['payment_qr'];
+        // ----- wap.net / WhatsApp gateway config -----------------------
+        $wapnet = [
+            'wapnet_enabled'          => isset($_POST['wapnet_enabled']) ? '1' : '0',
+            'wapnet_api_url'          => trim((string) ($_POST['wapnet_api_url'] ?? '')),
+            'wapnet_api_key'          => trim((string) ($_POST['wapnet_api_key'] ?? '')),
+            'wapnet_sender_id'        => trim((string) ($_POST['wapnet_sender_id'] ?? '')),
+            'wapnet_default_template' => trim((string) ($_POST['wapnet_default_template'] ?? '')),
+        ];
+        foreach ($wapnet as $k => $v) {
+            $type = $k === 'wapnet_enabled' ? 'bool' : 'string';
+            $this->systemSettings->set($k, $v, $type);
+        }
 
-            if (!is_uploaded_file($file['tmp_name'])) {
-                $newQrError = 'Fail QR tidak sah.';
-            } elseif ((int) $file['size'] > self::MAX_BYTES) {
-                $newQrError = 'Saiz QR melebihi had 2 MB.';
-            } else {
-                $ext  = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
-                $mime = mime_content_type($file['tmp_name']) ?: '';
-                if (!in_array($ext, self::ALLOWED_EXT, true) || !in_array($mime, self::ALLOWED_MIME, true)) {
-                    $newQrError = 'Jenis fail QR tidak dibenarkan (png, jpg, svg, webp).';
-                } else {
-                    $dir = APP_ROOT . '/storage/uploads/brand/';
-                    if (!is_dir($dir)) {
-                        mkdir($dir, 0775, true);
-                    }
-                    $storedName = 'qr_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
-                    $dest = $dir . $storedName;
-                    if (!move_uploaded_file($file['tmp_name'], $dest)) {
-                        $newQrError = 'Gagal menyimpan QR.';
-                    } else {
-                        if ($currentQr && $currentQr !== $storedName) {
-                            $this->deleteBrandFile($currentQr, 'qr');
-                        }
-                        $this->settings->set('payment_qr_path', $storedName);
-                    }
-                }
-            }
+        // ----- General contact info ------------------------------------
+        $contacts = [
+            'system_contact_phone' => trim((string) ($_POST['system_contact_phone'] ?? '')),
+            'system_contact_email' => trim((string) ($_POST['system_contact_email'] ?? '')),
+        ];
+        if ($contacts['system_contact_email'] !== '' && !filter_var($contacts['system_contact_email'], FILTER_VALIDATE_EMAIL)) {
+            $contacts['system_contact_email'] = '';
+            set_flash('warning', 'Emel hubungan sistem tidak sah; nilai dikosongkan.');
+        }
+        foreach ($contacts as $k => $v) {
+            $this->systemSettings->set($k, $v, 'string');
         }
 
         AuditService::log('settings.updated', (int) ($_SESSION['user_id'] ?? 0), 'app_settings', 0, [
             'app_name_changed' => true,
-            'logo_changed'     => !empty($_FILES['logo']['tmp_name'] ?? '') && $newLogoError === null,
+            'logo_changed'     => $newLogoError === null && !empty($_FILES['logo']['tmp_name'] ?? ''),
             'logo_removed'     => $removeLogo,
-            'qr_changed'       => !empty($_FILES['payment_qr']['tmp_name'] ?? '') && $newQrError === null,
+            'qr_changed'       => $newQrError === null && !empty($_FILES['payment_qr']['tmp_name'] ?? ''),
             'qr_removed'       => $removeQr,
+            'email_blast'      => $emailBlast['email_blast_enabled'] === '1',
+            'wapnet'           => $wapnet['wapnet_enabled'] === '1',
         ]);
 
         if ($newLogoError !== null || $newQrError !== null) {
@@ -167,9 +167,119 @@ final class AdminSettingsController extends Controller
     }
 
     /**
-     * Delete a brand asset (logo or QR) from disk. Failures are swallowed —
-     * they should not block the user from saving new settings.
+     * Handle the "Email Blast" form — sends a broadcast immediately and
+     * records the result for audit/history. Routed via a separate action so
+     * the heavy save flow above stays small.
      */
+    public function sendBlast(): void
+    {
+        $token = (string) ($_POST['csrf_token'] ?? '');
+        if (!hash_equals((string) ($_SESSION['csrf_token'] ?? ''), $token)) {
+            set_flash('error', 'Sesi tidak sah. Sila cuba lagi.');
+            $this->redirect('/admin/settings');
+        }
+
+        if (!$this->systemSettings->get('email_blast_enabled', false)) {
+            set_flash('error', 'Email blast belum diaktifkan. Aktifkan pada borang Tetapan dahulu.');
+            $this->redirect('/admin/settings');
+        }
+
+        $subject = trim((string) ($_POST['subject'] ?? ''));
+        $message = trim((string) ($_POST['message'] ?? ''));
+        $target  = (string) ($_POST['target_role'] ?? 'all');
+
+        $result = $this->blaster->send(
+            $subject,
+            $message,
+            $target,
+            (int) ($_SESSION['user_id'] ?? 0)
+        );
+
+        if (!empty($result['ok'])) {
+            set_flash('success', sprintf(
+                'Email blast berjaya dihantar kepada %d penerima.',
+                $result['count'] ?? 0
+            ));
+        } else {
+            set_flash('error', $result['error'] ?? 'Gagal menghantar email blast.');
+        }
+        $this->redirect('/admin/settings');
+    }
+
+    private function handleLogoUpload(?string $currentLogo): ?string
+    {
+        if (empty($_FILES['logo']) || ($_FILES['logo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return null;
+        }
+
+        $file = $_FILES['logo'];
+        if (!is_uploaded_file($file['tmp_name'])) {
+            return 'Fail tidak sah.';
+        }
+        if ((int) $file['size'] > self::MAX_BYTES) {
+            return 'Saiz logo melebihi had 2 MB.';
+        }
+
+        $ext  = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        if (!in_array($ext, self::ALLOWED_EXT, true) || !in_array($mime, self::ALLOWED_MIME, true)) {
+            return 'Jenis fail tidak dibenarkan (png, jpg, svg, webp).';
+        }
+
+        $dir = APP_ROOT . '/storage/uploads/brand/';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        $storedName = 'logo_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $dest = $dir . $storedName;
+        if (!move_uploaded_file($file['tmp_name'], $dest)) {
+            return 'Gagal menyimpan logo.';
+        }
+
+        if ($currentLogo && $currentLogo !== $storedName) {
+            $this->deleteBrandFile($currentLogo, 'logo');
+        }
+        $this->appSettings->set('logo_path', $storedName);
+        return null;
+    }
+
+    private function handleQrUpload(?string $currentQr): ?string
+    {
+        if (empty($_FILES['payment_qr']) || ($_FILES['payment_qr']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return null;
+        }
+
+        $file = $_FILES['payment_qr'];
+        if (!is_uploaded_file($file['tmp_name'])) {
+            return 'Fail QR tidak sah.';
+        }
+        if ((int) $file['size'] > self::MAX_BYTES) {
+            return 'Saiz QR melebihi had 2 MB.';
+        }
+
+        $ext  = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
+        $mime = mime_content_type($file['tmp_name']) ?: '';
+        if (!in_array($ext, self::ALLOWED_EXT, true) || !in_array($mime, self::ALLOWED_MIME, true)) {
+            return 'Jenis fail QR tidak dibenarkan (png, jpg, svg, webp).';
+        }
+
+        $dir = APP_ROOT . '/storage/uploads/brand/';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        $storedName = 'qr_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $dest = $dir . $storedName;
+        if (!move_uploaded_file($file['tmp_name'], $dest)) {
+            return 'Gagal menyimpan QR.';
+        }
+
+        if ($currentQr && $currentQr !== $storedName) {
+            $this->deleteBrandFile($currentQr, 'qr');
+        }
+        $this->appSettings->set('payment_qr_path', $storedName);
+        return null;
+    }
+
     private function deleteBrandFile(string $storedName, string $kind): void
     {
         if (!preg_match('/^[A-Za-z0-9._-]+$/', $storedName)) {

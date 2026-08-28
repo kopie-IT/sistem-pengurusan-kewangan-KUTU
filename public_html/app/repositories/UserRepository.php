@@ -13,6 +13,85 @@ use PDO;
  */
 final class UserRepository
 {
+    /**
+     * List admin / staff users (internal accounts) for the user-management
+     * page. Returns lightweight associative rows so the view can render a
+     * table without hydrating full User objects.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function listInternal(?string $search = null): array
+    {
+        $where = "WHERE r.slug IN ('admin','super_admin','staff')";
+        $params = [];
+        if ($search !== null && $search !== '') {
+            $where .= ' AND (u.name LIKE :search OR u.email LIKE :search)';
+            $params[':search'] = '%' . $search . '%';
+        }
+
+        $sql = "SELECT u.id, u.name, u.email, u.status, u.last_login_at,
+                       u.failed_login_count, u.must_reset_password,
+                       r.slug AS role_slug, r.name AS role_name
+                FROM users u
+                INNER JOIN roles r ON r.id = u.role_id
+                {$where}
+                ORDER BY FIELD(r.slug, 'super_admin','admin','staff'), u.name ASC";
+
+        $stmt = Database::connection()->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    public function create(array $data): int
+    {
+        $sql = 'INSERT INTO users (name, email, password, role_id, status, must_reset_password, created_at, updated_at)
+                VALUES (:name, :email, :password, :role_id, :status, :must_reset, NOW(), NOW())';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute([
+            ':name'        => $data['name'],
+            ':email'       => $data['email'],
+            ':password'    => $data['password'],
+            ':role_id'     => (int) $data['role_id'],
+            ':status'      => $data['status'] ?? 'active',
+            ':must_reset'  => (int) ($data['must_reset_password'] ?? 1),
+        ]);
+        return (int) Database::connection()->lastInsertId();
+    }
+
+    public function updateRole(int $userId, int $roleId): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE users SET role_id = :r, updated_at = NOW() WHERE id = :id');
+        $stmt->execute([':r' => $roleId, ':id' => $userId]);
+    }
+
+    public function updateStatus(int $userId, string $status): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE users SET status = :s, updated_at = NOW() WHERE id = :id');
+        $stmt->execute([':s' => $status, ':id' => $userId]);
+    }
+
+    public function forceResetPassword(int $userId): void
+    {
+        $this->forcePasswordReset($userId);
+    }
+
+    public function delete(int $userId): void
+    {
+        $stmt = Database::connection()->prepare('DELETE FROM users WHERE id = :id');
+        $stmt->execute([':id' => $userId]);
+    }
+
+    public function roleIdBySlug(string $slug): ?int
+    {
+        $stmt = Database::connection()->prepare('SELECT id FROM roles WHERE slug = :slug LIMIT 1');
+        $stmt->execute([':slug' => $slug]);
+        $v = $stmt->fetchColumn();
+        return $v === false ? null : (int) $v;
+    }
+
     public function findById(int $id): ?User
     {
         $sql = 'SELECT u.*, r.slug AS role_slug

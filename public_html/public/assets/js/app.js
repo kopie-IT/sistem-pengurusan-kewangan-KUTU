@@ -98,8 +98,46 @@
     }
 
     // ----------------------------------------------------------------------
-    // Active nav link highlight based on current path
+    // Settings tabs (multi-tab admin settings page)
     // ----------------------------------------------------------------------
+    function initSettingsTabs() {
+        var tabs = document.querySelectorAll('[role="tablist"] .settings-tab');
+        if (!tabs.length) return;
+
+        tabs.forEach(function (tab) {
+            tab.addEventListener('click', function (event) {
+                event.preventDefault();
+                var targetId = tab.getAttribute('data-tab');
+                if (!targetId) return;
+
+                tabs.forEach(function (other) {
+                    var active = other === tab;
+                    other.classList.toggle('is-active', active);
+                    other.setAttribute('aria-selected', active ? 'true' : 'false');
+                });
+
+                document.querySelectorAll('[data-pane]').forEach(function (pane) {
+                    var active = pane.getAttribute('data-pane') === targetId;
+                    pane.classList.toggle('is-active', active);
+                    if (active) {
+                        pane.removeAttribute('hidden');
+                    } else {
+                        pane.setAttribute('hidden', '');
+                    }
+                });
+            });
+        });
+    }
+
+    // ----------------------------------------------------------------------
+    // Active nav link highlight based on current path (header only)
+    // ----------------------------------------------------------------------
+    //
+    // Only the header's nav links are highlighted here — the sidebar items
+    // already receive an `is-active` class on the server side (rendered with
+    // exact-match logic), and we never want two items to look selected at
+    // the same time. We additionally stamp `aria-current="page"` for screen
+    // readers without touching the visual state.
     function highlightActiveNav() {
         var path = window.location.pathname.replace(/\/+$/, '') || '/';
         document.querySelectorAll('.nav-link').forEach(function (link) {
@@ -107,8 +145,27 @@
             var target = href.replace(/#.*$/, '').replace(/\/+$/, '') || '/';
             if (target === path) {
                 link.classList.add('is-active');
+                link.setAttribute('aria-current', 'page');
+            } else {
+                link.classList.remove('is-active');
+                link.removeAttribute('aria-current');
             }
         });
+
+        // Defensive: if multiple sidebar items ended up with is-active
+        // (e.g. due to a hard reload racing with JS state), keep only the
+        // one whose href exactly matches the current path.
+        var sidebarLinks = document.querySelectorAll('.app-sidebar a.is-active');
+        if (sidebarLinks.length > 1) {
+            sidebarLinks.forEach(function (a) {
+                var href = a.getAttribute('href') || '';
+                var target = href.replace(/\/+$/, '') || '/';
+                if (target !== path) {
+                    a.classList.remove('is-active');
+                    a.removeAttribute('aria-current');
+                }
+            });
+        }
     }
 
     // ----------------------------------------------------------------------
@@ -238,5 +295,6 @@
         initPasswordToggle();
         highlightActiveNav();
         initSidebarCollapse();
+        initSettingsTabs();
     });
 })();

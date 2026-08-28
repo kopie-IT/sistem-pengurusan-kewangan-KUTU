@@ -212,6 +212,119 @@
 .brand-preview-text { display: flex; flex-direction: column; }
 .brand-preview-text small { color: var(--color-slate-500); font-size: 0.8rem; }
 
+/* Payout calendar (dashboard) ------------------------------------- */
+.payout-calendar { margin-top: var(--space-6); }
+.payout-today-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+    margin-top: var(--space-4);
+}
+@media (min-width: 768px) {
+    .payout-today-grid {
+        grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr);
+        align-items: start;
+    }
+}
+.payout-today-summary {
+    padding: var(--space-5);
+    background: linear-gradient(135deg, var(--color-brand-50), #ecfeff);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-brand-100);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.payout-today-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-brand-700);
+}
+.payout-today-amount {
+    font-size: 1.6rem;
+    color: var(--color-slate-900);
+    font-weight: 800;
+}
+.payout-today-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.5rem;
+}
+.payout-today-item {
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    background: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.payout-today-item:hover { border-color: var(--color-brand-200); box-shadow: var(--shadow-sm); }
+.payout-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    background: var(--color-brand-100);
+    color: var(--color-brand-700);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+.payout-info { display: flex; flex-direction: column; line-height: 1.35; min-width: 0; }
+.payout-info strong { font-weight: 600; color: var(--color-slate-900); }
+.payout-info small { color: var(--color-text-muted); font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.payout-amount { font-weight: 700; color: var(--color-emerald-600); white-space: nowrap; }
+.empty-state-card {
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+    background: var(--color-slate-50);
+    border: 1px dashed var(--color-border);
+    text-align: center;
+    color: var(--color-slate-700);
+}
+.badge-info { background: #e0f2fe; color: #075985; }
+.d-block { display: block; }
+
+/* Settings tabs + integration status ------------------------------- */
+.settings-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-bottom: var(--space-4);
+    padding: 0.4rem;
+    background: var(--color-slate-100);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+.settings-tab {
+    flex: 1 1 auto;
+    padding: 0.55rem 0.95rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--color-slate-600);
+    text-align: center;
+    transition: background var(--t-fast), color var(--t-fast);
+}
+.settings-tab:hover { color: var(--color-slate-900); text-decoration: none; }
+.settings-tab.is-active { background: var(--color-white); color: var(--color-brand-700); box-shadow: var(--shadow-sm); }
+.settings-pane { display: none; padding-top: var(--space-3); }
+.settings-pane.is-active { display: block; }
+.integration-status { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+.integration-status li { display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; padding: 0.45rem 0.6rem; border-radius: var(--radius-md); background: var(--color-slate-50); }
+.blast-composer { margin-top: var(--space-5); }
+.alert { padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-white); }
+.alert-info { background: #eef2ff; border-color: #c7d2fe; color: #1e3a8a; }
+.form-grid-2 { display: grid; grid-template-columns: 1fr; gap: var(--space-4); }
+@media (min-width: 768px) { .form-grid-2 { grid-template-columns: repeat(2, 1fr); } }
+
 /* Brand mark partial ------------------------------------------------- */
 .brand-mark {
     display: inline-flex;

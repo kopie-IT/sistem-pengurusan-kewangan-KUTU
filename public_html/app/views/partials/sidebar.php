@@ -17,7 +17,21 @@ $isActive = static function (string $path, bool $exact = false) use ($currentPat
     if ($path === '/') {
         return $currentPath === '/';
     }
-    return $currentPath === $path || str_starts_with($currentPath, rtrim($path, '/') . '/');
+    // Exact match always wins over any prefix logic.
+    if ($currentPath === $path) {
+        return true;
+    }
+    // For child paths: only treat as active when the current URL is a true
+    // descendant (next segment exists), so a parent menu like /admin doesn't
+    // stay highlighted when navigating to /admin/plans.
+    $path = rtrim($path, '/');
+    if (!str_starts_with($currentPath, $path . '/')) {
+        return false;
+    }
+    // Disallow "logical parent" matches (e.g. /admin -> /admin/plans only,
+    // not /admin -> /administration). Done by ensuring the character that
+    // follows the path is a directory separator (handled above).
+    return true;
 };
 
 $icon = static function (string $key): string {
@@ -25,6 +39,7 @@ $icon = static function (string $key): string {
         'dashboard' => '<path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>',
         'plans'     => '<path d="M4 6h16M4 12h16M4 18h10"/><circle cx="18" cy="18" r="2"/>',
         'members'   => '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+        'users'     => '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 16 0v1"/>',
         'payments'  => '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
         'payouts'   => '<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
         'shortfalls'=> '<path d="M12 9v4"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 17h.01"/>',
@@ -84,12 +99,13 @@ if ($isAdmin) {
         ],
     ];
 
-    // Sistem > Tetapan hanya untuk admin / super_admin (bukan staff).
+    // Sistem > Tetapan & Urus Pengguna hanya untuk admin / super_admin (bukan staff).
     if ($isSuperAdmin) {
         $groups[] = [
             'label' => 'Sistem',
             'items' => [
-                ['label' => 'Tetapan', 'url' => '/admin/settings', 'icon' => 'settings'],
+                ['label' => 'Urus Pengguna',  'url' => '/admin/users',     'icon' => 'users'],
+                ['label' => 'Tetapan',        'url' => '/admin/settings',  'icon' => 'settings'],
             ],
         ];
     }
@@ -184,9 +200,15 @@ foreach ($groups as $gIndex => $group) {
                         <?php endif; ?>
                     </button>
                     <div id="grp-<?= e($gKey) ?>" class="app-nav-children" role="group">
-                        <?php foreach ($group['items'] as $item): ?>
+                        <?php foreach ($group['items'] as $item):
+                            // Items inside a labelled group are siblings — highlight
+                            // only when the current path matches exactly so we don't
+                            // double-mark parent + child at the same time.
+                            $itemActive = $isActive($item['url'], true);
+                        ?>
                             <a href="<?= e(url($item['url'])) ?>"
-                               class="<?= $isActive($item['url']) ? 'is-active' : '' ?>">
+                               class="<?= $itemActive ? 'is-active' : '' ?>"
+                               <?= $itemActive ? 'aria-current="page"' : '' ?>>
                                 <span class="app-nav-icon" aria-hidden="true"><?= $icon($item['icon'] ?? 'dashboard') ?></span>
                                 <span><?= e($item['label']) ?></span>
                             </a>
@@ -194,9 +216,15 @@ foreach ($groups as $gIndex => $group) {
                     </div>
                 </div>
             <?php else: ?>
-                <?php foreach ($group['items'] as $item): ?>
+                <?php foreach ($group['items'] as $item):
+                    // Top-level single items (Dashboard etc.) only highlight on
+                    // an exact path match — otherwise the dashboard item remains
+                    // lit when navigating to /admin/plans or /admin/payments.
+                    $itemActive = $isActive($item['url'], true);
+                ?>
                     <a href="<?= e(url($item['url'])) ?>"
-                       class="<?= $isActive($item['url']) ? 'is-active' : '' ?>">
+                       class="<?= $itemActive ? 'is-active' : '' ?>"
+                       <?= $itemActive ? 'aria-current="page"' : '' ?>>
                         <span class="app-nav-icon" aria-hidden="true"><?= $icon($item['icon'] ?? 'dashboard') ?></span>
                         <span><?= e($item['label']) ?></span>
                     </a>

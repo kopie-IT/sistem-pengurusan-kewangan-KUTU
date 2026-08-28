@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Controllers\AdminController;
+use App\Controllers\AdminSettingsController;
 use App\Controllers\AuthController;
 use App\Controllers\CalendarController;
 use App\Controllers\CreditScoreController;
@@ -17,6 +18,7 @@ use App\Controllers\PlanController;
 use App\Controllers\ProfileController;
 use App\Controllers\ReportController;
 use App\Controllers\ShortfallController;
+use App\Controllers\UserManagementController;
 use App\Controllers\VerificationController;
 use App\Controllers\WithdrawalController;
 use App\Core\Container;
@@ -153,6 +155,17 @@ $router->post('/admin/payouts/{id}/slip',     [PayoutController::class, 'confirm
 // Admin settings (system name, tagline, logo) - admin + super_admin only.
 $router->get('/admin/settings',  [AdminSettingsController::class, 'index'], 'admin.settings', $superAdmin);
 $router->post('/admin/settings', [AdminSettingsController::class, 'update'], null, $superAdmin);
+// Email blast send endpoint (admin + super_admin only).
+$router->post('/admin/settings/blast', [AdminSettingsController::class, 'sendBlast'], null, $superAdmin);
+
+// Internal user management (admin / super_admin / staff) — admin + super_admin only.
+$router->get('/admin/users',                 [UserManagementController::class, 'index'],   'admin.users',          $superAdmin);
+$router->get('/admin/users/create',          [UserManagementController::class, 'create'],  'admin.users.create',   $superAdmin);
+$router->post('/admin/users',                [UserManagementController::class, 'store'],   null,                    $superAdmin);
+$router->get('/admin/users/{id}/edit',       [UserManagementController::class, 'edit'],    null,                    $superAdmin);
+$router->post('/admin/users/{id}',           [UserManagementController::class, 'update'],  null,                    $superAdmin);
+$router->post('/admin/users/{id}/delete',    [UserManagementController::class, 'destroy'], 'admin.users.delete',   $superAdmin);
+$router->post('/admin/users/{id}/reset-password', [UserManagementController::class, 'resetPassword'], 'admin.users.reset', $superAdmin);
 
 $router->get('/admin/credit-scores', [CreditScoreController::class, 'adminIndex'], 'admin.credit-scores', $admin);
 $router->get('/admin/credit-scores/{id}', [CreditScoreController::class, 'show'], 'admin.credit-scores.show', $admin);
