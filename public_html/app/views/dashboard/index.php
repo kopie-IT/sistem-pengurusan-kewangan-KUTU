@@ -1,54 +1,82 @@
-<section class="hero" style="padding: 3rem 0 2rem;">
-    <div class="container">
+<?php
+/** @var \App\Models\User|null $user */
+$isAdmin = $user?->isAdmin() ?? false;
+?>
+<?= flash_messages() ?>
+
+<div class="dashboard-page member-dashboard">
+    <div class="dashboard-welcome">
         <div>
-            <span class="hero-eyebrow">
-                <span class="badge-dot" aria-hidden="true"></span>
-                <?= $user && $user->isAdmin() ? 'Pentadbir' : 'Ahli' ?>
-            </span>
-            <h1>
-                Selamat datang,
-                <span class="gradient-text"><?= e($user?->name ?? 'Pengguna') ?></span>
-            </h1>
-            <p class="lead">
-                Anda log masuk sebagai <strong><?= e($user?->email ?? '') ?></strong>.
-                Ini adalah paparan ringkas akaun anda. Modul penuh akan ditambah dalam fasa seterusnya.
-            </p>
+            <span class="page-eyebrow"><?= $isAdmin ? 'Pentadbiran' : 'Akaun Ahli' ?></span>
+            <h1>Selamat datang, <?= e($user?->name ?? 'Pengguna') ?></h1>
+            <p>Urus pelan, caruman, payout, dan makluman anda dari satu tempat.</p>
+        </div>
+        <div class="dashboard-welcome-actions">
+            <?php if ($isAdmin): ?>
+                <a href="<?= url('/admin') ?>" class="btn btn-primary">Buka Dashboard Pentadbir</a>
+            <?php else: ?>
+                <a href="<?= url('/plans') ?>" class="btn btn-primary">Lihat Pelan</a>
+                <a href="<?= url('/payments') ?>" class="btn btn-secondary">Bayaran Saya</a>
+            <?php endif; ?>
         </div>
     </div>
-</section>
 
-<section class="section" style="padding-top: 1.5rem;">
-    <div class="container">
-        <div class="features-grid">
-            <div class="feature">
-                <div class="icon" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <div class="member-dashboard-grid">
+        <section class="card account-summary" aria-labelledby="akaun-heading">
+            <div class="card-heading">
+                <div>
+                    <span class="section-kicker">Akaun</span>
+                    <h2 id="akaun-heading" class="card-title">Ringkasan profil</h2>
                 </div>
-                <h3>Maklumat Akaun</h3>
-                <p><strong>Nama:</strong> <?= e($user?->name ?? '-') ?></p>
-                <p><strong>Emel:</strong> <?= e($user?->email ?? '-') ?></p>
-                <p><strong>Role:</strong> <?= e(ucfirst($user?->roleSlug ?? '-')) ?></p>
+                <span class="badge badge-success">Aktif</span>
             </div>
+            <dl class="account-details">
+                <div><dt>Nama</dt><dd><?= e($user?->name ?? '-') ?></dd></div>
+                <div><dt>Emel</dt><dd><?= e($user?->email ?? '-') ?></dd></div>
+                <div><dt>Peranan</dt><dd><?= e(ucfirst($user?->roleSlug ?? 'member')) ?></dd></div>
+            </dl>
+            <a href="<?= url('/profile') ?>" class="btn btn-secondary btn-sm">Kemaskini Profil</a>
+        </section>
 
-            <div class="feature">
-                <div class="icon" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <section class="card" aria-labelledby="seterusnya-heading">
+            <div class="card-heading">
+                <div>
+                    <span class="section-kicker">Seterusnya</span>
+                    <h2 id="seterusnya-heading" class="card-title">Tindakan cepat</h2>
                 </div>
-                <h3>Keselamatan</h3>
-                <p>Kata laluan dienkripsi dengan bcrypt. Sesi dilindungi cookie HttpOnly dan SameSite=Strict.</p>
-                <p style="margin-top: 0.75rem;">
-                    <a href="<?= url('/logout') ?>" class="btn btn-secondary">Log Keluar</a>
-                </p>
             </div>
+            <div class="action-list">
+                <a class="action-item" href="<?= url('/payments') ?>">
+                    <span class="action-indicator action-indicator-amber" aria-hidden="true"></span>
+                    <span class="action-copy"><strong>Semak caruman</strong><small>Lihat baki dan tarikh pembayaran.</small></span>
+                    <span class="action-arrow" aria-hidden="true">›</span>
+                </a>
+                <a class="action-item" href="<?= url('/payouts/me') ?>">
+                    <span class="action-indicator action-indicator-cyan" aria-hidden="true"></span>
+                    <span class="action-copy"><strong>Semak payout</strong><small>Rujuk jadual pembayaran anda.</small></span>
+                    <span class="action-arrow" aria-hidden="true">›</span>
+                </a>
+                <a class="action-item" href="<?= url('/credit-score') ?>">
+                    <span class="action-indicator action-indicator-brand" aria-hidden="true"></span>
+                    <span class="action-copy"><strong>Skor kredit</strong><small>Pantau tahap kelayakan anda.</small></span>
+                    <span class="action-arrow" aria-hidden="true">›</span>
+                </a>
+            </div>
+        </section>
+    </div>
 
-            <div class="feature">
-                <div class="icon" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                </div>
-                <h3>Aktiviti Terakhir</h3>
-                <p><strong>Log masuk:</strong> <?= e($user?->lastLoginAt ?? 'Tidak diketahui') ?></p>
-                <p><strong>IP:</strong> <?= e($user?->lastLoginIp ?? '-') ?></p>
+    <section class="dashboard-quick-links" aria-labelledby="akaun-modul-heading">
+        <div class="section-header-inline">
+            <div>
+                <span class="section-kicker">Navigasi</span>
+                <h2 id="akaun-modul-heading">Urus akaun anda</h2>
             </div>
         </div>
-    </div>
-</section>
+        <div class="quick-link-grid">
+            <a href="<?= url('/plans') ?>"><strong>Pelan tersedia</strong><span>Sertai dan semak pelan kutu</span></a>
+            <a href="<?= url('/calendar/contribution') ?>"><strong>Kalendar caruman</strong><span>Tarikh caruman yang penting</span></a>
+            <a href="<?= url('/withdrawals') ?>"><strong>Pengeluaran</strong><span>Status permintaan pengeluaran</span></a>
+            <a href="<?= url('/notifications') ?>"><strong>Makluman</strong><span>Notis sistem terkini</span></a>
+        </div>
+    </section>
+</div>

@@ -47,6 +47,10 @@
                     <input type="password" id="password" name="password" required autocomplete="current-password"
                            placeholder="Masukkan kata laluan"
                            class="form-control">
+                    <button type="button" class="input-affix-btn" id="togglePassword"
+                            data-password-toggle="password"
+                            aria-label="Papar kata laluan" aria-pressed="false"
+                            aria-controls="password">
                 </div>
 
                 <div class="form-row">

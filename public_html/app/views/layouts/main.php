@@ -13,29 +13,25 @@
 </head>
 <body>
     <?php
-    // The main layout is shared by public and authenticated pages. Determine
-    // the auth state from the session so the correct menu is rendered:
-    //  - Not authenticated -> public website menu only.
-    //  - Authenticated     -> app header + sidebar navigation only.
     $authenticated = !empty($_SESSION['user_id']);
     $currentUser = $_SESSION['user_name'] ?? '';
+    $isAdmin = in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin'], true);
+    $homeUrl = $isAdmin ? '/admin' : '/dashboard';
     ?>
     <div class="app-shell">
         <header class="app-header">
             <div class="container">
-                <nav class="nav" aria-label="Primary">
-                    <a href="<?= url('/') ?>" class="nav-brand">
+                <nav class="nav" aria-label="Navigasi utama">
+                    <a href="<?= url($authenticated ? $homeUrl : '/') ?>" class="nav-brand">
                         <span class="nav-brand-mark" aria-hidden="true">MK</span>
                         <span>Main Kutu</span>
                     </a>
-
                     <?php if (!$authenticated): ?>
                         <div class="nav-links" role="menubar">
                             <a href="<?= url('/') ?>" class="nav-link" role="menuitem">Utama</a>
                             <a href="<?= url('/#features') ?>" class="nav-link" role="menuitem">Ciri</a>
                             <a href="<?= url('/#how') ?>" class="nav-link" role="menuitem">Bagaimana</a>
                         </div>
-
                         <div class="nav-cta">
                             <a href="<?= url('/login') ?>" class="btn btn-primary">Log Masuk</a>
                             <button type="button" class="nav-toggle" id="navToggle" aria-label="Buka menu" aria-expanded="false" aria-controls="mobileMenu">
@@ -44,9 +40,7 @@
                         </div>
                     <?php else: ?>
                         <div class="nav-cta">
-                            <?php if ($currentUser !== ''): ?>
-                                <span class="nav-user" title="<?= e($currentUser) ?>"><?= e($currentUser) ?></span>
-                            <?php endif; ?>
+                            <?php if ($currentUser !== ''): ?><span class="nav-user" title="<?= e($currentUser) ?>"><?= e($currentUser) ?></span><?php endif; ?>
                             <a href="<?= url('/notifications') ?>" class="btn btn-ghost" aria-label="Pemberitahuan">Makluman</a>
                             <a href="<?= url('/logout') ?>" class="btn btn-primary">Log Keluar</a>
                             <button type="button" class="nav-toggle" id="navToggle" aria-label="Buka menu" aria-expanded="false" aria-controls="mobileMenu">
@@ -55,83 +49,36 @@
                         </div>
                     <?php endif; ?>
                 </nav>
-
                 <div class="mobile-menu" id="mobileMenu" role="menu">
                     <div class="mobile-menu-inner">
                         <?php if (!$authenticated): ?>
-                            <a href="<?= url('/') ?>" role="menuitem">Utama</a>
-                            <a href="<?= url('/#features') ?>" role="menuitem">Ciri</a>
-                            <a href="<?= url('/#how') ?>" role="menuitem">Bagaimana</a>
-                            <a href="<?= url('/login') ?>" role="menuitem">Log Masuk</a>
+                            <a href="<?= url('/') ?>" role="menuitem">Utama</a><a href="<?= url('/#features') ?>" role="menuitem">Ciri</a><a href="<?= url('/#how') ?>" role="menuitem">Bagaimana</a><a href="<?= url('/login') ?>" role="menuitem">Log Masuk</a>
                         <?php else: ?>
-                            <a href="<?= url('/dashboard') ?>" role="menuitem">Papan Pemuka</a>
-                            <a href="<?= url('/notifications') ?>" role="menuitem">Makluman</a>
-                            <a href="<?= url('/logout') ?>" role="menuitem">Log Keluar</a>
+                            <a href="<?= url($homeUrl) ?>" role="menuitem"><?= $isAdmin ? 'Dashboard' : 'Papan Pemuka' ?></a><a href="<?= url('/notifications') ?>" role="menuitem">Makluman</a><a href="<?= url('/logout') ?>" role="menuitem">Log Keluar</a>
                         <?php endif; ?>
                     </div>
                 </div>
             </div>
         </header>
-
         <?php if (!$authenticated): ?>
-            <main class="app-main">
-                <?= $content ?>
-            </main>
+            <main class="app-main"><?= $content ?></main>
         <?php else: ?>
-            <main class="app-main">
-                <div class="app-layout">
-                    <?= partial('sidebar') ?>
-                    <div class="app-content">
-                        <?= $content ?>
-                    </div>
-                </div>
-            </main>
+            <main class="app-main"><div class="app-layout"><?= partial('sidebar') ?><div class="app-content"><?= $content ?></div></div></main>
         <?php endif; ?>
-
         <?php if (!$authenticated): ?>
             <footer class="app-footer">
                 <div class="container">
                     <div class="footer-grid">
-                        <div class="footer-brand">
-                            <a href="<?= url('/') ?>" class="nav-brand" style="color:#fff;">
-                                <span class="nav-brand-mark" aria-hidden="true">MK</span>
-                                <span style="color:#fff;">Sistem Main Kutu</span>
-                            </a>
-                            <p>Platform pengurusan Main Kutu yang moden, telus dan selamat untuk komuniti anda.</p>
-                        </div>
-                        <div class="footer-links">
-                            <h4>Produk</h4>
-                            <ul>
-                                <li><a href="<?= url('/#features') ?>">Ciri</a></li>
-                                <li><a href="<?= url('/#how') ?>">Bagaimana</a></li>
-                            </ul>
-                        </div>
-                        <div class="footer-links">
-                            <h4>Sokongan</h4>
-                            <ul>
-                                <li><a href="#">Bantuan</a></li>
-                                <li><a href="#">Hubungi Kami</a></li>
-                                <li><a href="#">FAQ</a></li>
-                            </ul>
-                        </div>
-                        <div class="footer-links">
-                            <h4>Legal</h4>
-                            <ul>
-                                <li><a href="#">Terma</a></li>
-                                <li><a href="#">Privasi</a></li>
-                                <li><a href="#">Keselamatan</a></li>
-                            </ul>
-                        </div>
+                        <div class="footer-brand"><a href="<?= url('/') ?>" class="nav-brand" style="color:#fff;"><span class="nav-brand-mark" aria-hidden="true">MK</span><span style="color:#fff;">Sistem Main Kutu</span></a><p>Platform pengurusan Main Kutu yang moden, telus dan selamat untuk komuniti anda.</p></div>
+                        <div class="footer-links"><h4>Produk</h4><ul><li><a href="<?= url('/#features') ?>">Ciri</a></li><li><a href="<?= url('/#how') ?>">Bagaimana</a></li></ul></div>
+                        <div class="footer-links"><h4>Sokongan</h4><ul><li><a href="#">Bantuan</a></li><li><a href="#">Hubungi Kami</a></li><li><a href="#">FAQ</a></li></ul></div>
+                        <div class="footer-links"><h4>Legal</h4><ul><li><a href="#">Terma</a></li><li><a href="#">Privasi</a></li><li><a href="#">Keselamatan</a></li></ul></div>
                     </div>
-                    <div class="footer-bottom">
-                        <span>&copy; <?= date('Y') ?> Sistem Pengurusan Main Kutu. Hak cipta terpelihara.</span>
-                        <span>Versi 1.0.0 · MYR (RM)</span>
-                    </div>
+                    <div class="footer-bottom"><span>&copy; <?= date('Y') ?> Sistem Pengurusan Main Kutu. Hak cipta terpelihara.</span><span>Versi 1.0.0 · MYR (RM)</span></div>
                 </div>
             </footer>
         <?php endif; ?>
     </div>
-
     <script src="<?= asset('assets/js/app.js') ?>" defer></script>
 </body>
 </html>

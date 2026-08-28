@@ -10,55 +10,19 @@ use App\Repositories\CreditScoreRepository;
 use App\Repositories\LedgerRepository;
 use App\Repositories\MemberRepository;
 use App\Repositories\PlanRepository;
-use App\Repositories\ShortfallRepository;
-use App\Services\AuthService;
-use App\Services\PlanService;
-use PDO;
-
 final class ReportController extends Controller
 {
     public function __construct(
-        private AuthService $auth,
-        private PlanService $plans,
         private LedgerRepository $ledger,
         private MemberRepository $members,
         private PlanRepository $planRepo,
         private CreditScoreRepository $creditRepo,
-        private ShortfallRepository $shortfalls,
     ) {}
 
-    /** Admin dashboard with rich widgets. */
+    /** Legacy report root redirects to the primary financial report. */
     public function dashboard(): void
     {
-        $stats = $this->plans->getStats();
-
-        $pendingVerification = (int) Database::connection()
-            ->query("SELECT COUNT(*) FROM payment_batches WHERE status IN ('submitted','pending_verification')")
-            ->fetchColumn();
-
-        $stats['pending_verification'] = $pendingVerification;
-        $stats['shortfall_open'] = (int) Database::connection()
-            ->query("SELECT COUNT(*) FROM shortfalls WHERE status = 'open'")
-            ->fetchColumn();
-
-        // Low-score members (<= 60).
-        $lowScores = [];
-        $pdo = Database::connection();
-        $stmt = $pdo->query('SELECT cs.member_id, cs.score, cs.level, u.name AS name
-                            FROM credit_scores cs
-                            LEFT JOIN members m ON m.id = cs.member_id
-                            LEFT JOIN users u ON u.id = m.user_id
-                            WHERE cs.score <= 60
-                            ORDER BY cs.score ASC LIMIT 20');
-        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            $lowScores[] = $row;
-        }
-
-        $this->view('reports/dashboard', [
-            'title'     => 'Papan Pemuka Pentadbir',
-            'stats'     => $stats,
-            'lowScores' => $lowScores,
-        ]);
+        $this->redirect(url('/admin/reports/financial'));
     }
 
     /** Financial ledger summary. */

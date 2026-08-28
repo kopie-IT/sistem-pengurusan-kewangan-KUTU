@@ -137,7 +137,8 @@ $router->get('/admin/payouts/{id}/generate',  [PayoutController::class, 'generat
 $router->post('/admin/payouts/{id}/generate', [PayoutController::class, 'generateStore'], null, $admin);
 $router->post('/admin/payouts/{id}/slip',     [PayoutController::class, 'confirmSlip'], null, $admin);
 
-$router->get('/admin/credit-scores', [CreditScoreController::class, 'show'], 'admin.credit-scores', $admin);
+$router->get('/admin/credit-scores', [CreditScoreController::class, 'adminIndex'], 'admin.credit-scores', $admin);
+$router->get('/admin/credit-scores/{id}', [CreditScoreController::class, 'show'], 'admin.credit-scores.show', $admin);
 
 $router->get('/admin/shortfalls', [ShortfallController::class, 'index'], 'admin.shortfalls', $admin);
 $router->post('/admin/shortfalls/{id}/resolve', [ShortfallController::class, 'resolve'], null, $admin);

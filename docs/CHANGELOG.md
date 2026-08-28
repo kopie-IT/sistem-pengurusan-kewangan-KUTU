@@ -8,6 +8,17 @@ Format mengikut Keep a Changelog.
 
 ## [Unreleased]
 
+### Changed - Dashboard & Application UI
+- Dashboard pentadbir (`/admin`) kini menjadi pusat ringkasan operasi: metrik pelan, ahli, semakan pembayaran, caruman tertunggak, tindakan keutamaan, dan aliran dana.
+- Menu `Laporan` kini hanya memaparkan Kewangan, Pelan, dan Ahli; pautan `Papan Pemuka` telah dibuang.
+- Laluan lama `/admin/reports` kekal serasi dan mengarah ke `/admin/reports/financial`.
+- Shell authenticated, sidebar, kad, ringkasan, senarai tindakan, pautan pantas, dan susun atur mudah alih dikemas kini dengan hierarki visual enterprise yang konsisten.
+- Header authenticated kini menghantar pentadbir ke `/admin` dan ahli ke `/dashboard`.
+
+### Changed - Sidebar & Login Polish
+- Sidebar dijenamakan semula dengan ikon SVG setiap item, garis penunjuk aktif, jarak kumpulan lebih konsisten, dan label kumpulan yang lebih halus.
+- Halaman log masuk kini mempunyai butang papar/sembunyi kata laluan (`input-affix` + `app.js` `initPasswordToggle`) dengan keadaan ARIA penuh.
+
 ### Added - Menu & Navigation Refactor
 - Shared hierarchical sidebar (`app/views/partials/sidebar.php`) dengan navigasi berperingkat (kumpulan + pautan anak yang di-indent) untuk peranan admin dan ahli.
 - Helper `partial()` untuk render partial view.
@@ -22,6 +33,7 @@ Format mengikut Keep a Changelog.
 ### Fixed
 - Account lockout ("Akaun dikunci") dilumpuhkan dalam development mode (`APP_ENV !== production`): semakan `isLocked()` dan `recordFailedLogin()` kini hanya berjalan apabila `APP_ENV=production`.
 - `PlanService::getStats()` memanggil `ContributionScheduleRepository::summaryForLedger()` yang tidak wujud (Fatal error pada dashboard laporan). Ditukar kepada `LedgerRepository::balanceSummary()` (aggregation sepatutnya di repository ledger, bukan contribution schedules).
+- `PlanController::show()` menghantar `membership` ke view tetapi view `plans/show.php` menjangka `alreadyMember` (bool) dan `memberStatus` (string) → "Undefined variable $alreadyMember". Tetap dengan menghantar `alreadyMember` dan `memberStatus` yang betul.
 
 ---
 

@@ -61,4 +61,14 @@ final class CreditScoreController extends Controller
         }
         $this->show($member->id);
     }
+
+    /** Admin: list all members' credit scores. */
+    public function adminIndex(): void
+    {
+        $rows = $this->credit->listAll();
+        $this->view('credit_score/admin_index', [
+            'title' => 'Skor Kredit Ahli',
+            'rows'  => $rows,
+        ]);
+    }
 }

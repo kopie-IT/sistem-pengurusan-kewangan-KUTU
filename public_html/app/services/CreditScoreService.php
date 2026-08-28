@@ -98,6 +98,16 @@ final class CreditScoreService
         return $this->scores->historyForMember($memberId);
     }
 
+    /**
+     * List all members' current credit scores (for the admin list page).
+     *
+     * @return array<int, array{member_id: int, name: string, email: string, score: int, level: string}>
+     */
+    public function listAll(): array
+    {
+        return $this->scores->all();
+    }
+
     private function clamp(int $score): int
     {
         if ($score < self::MIN_SCORE) {

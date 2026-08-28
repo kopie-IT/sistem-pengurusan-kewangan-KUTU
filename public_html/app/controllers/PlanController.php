@@ -53,21 +53,19 @@ final class PlanController extends Controller
         $member = $this->currentMember();
         $membership = null;
         if ($member !== null) {
-            $membership = $this->membership->listForMember($member->id);
-            $found = null;
-            foreach ($membership as $pm) {
+            foreach ($this->membership->listForMember($member->id) as $pm) {
                 if ($pm->planId === $id) {
-                    $found = $pm;
+                    $membership = $pm;
                     break;
                 }
             }
-            $membership = $found;
         }
 
         $this->view('plans/show', [
-            'title'      => e($plan->name),
-            'plan'       => $plan,
-            'membership' => $membership,
+            'title'         => e($plan->name),
+            'plan'          => $plan,
+            'alreadyMember' => $membership !== null,
+            'memberStatus'  => $membership?->status ?? null,
         ]);
     }
 

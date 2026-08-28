@@ -39,6 +39,26 @@ final class CreditScoreRepository
     }
 
     /**
+     * List all members' current credit scores, with member name, ordered by
+     * score ascending so the admin sees the riskiest members first.
+     *
+     * @return array<int, array{member_id: int, name: string, email: string, score: int, level: string}>
+     */
+    public function all(): array
+    {
+        $sql = 'SELECT m.id AS member_id, m.full_name AS name, u.email AS email,
+                       COALESCE(cs.score, 100) AS score,
+                       COALESCE(cs.level, \'excellent\') AS level
+                FROM members m
+                LEFT JOIN users u ON u.id = m.user_id
+                LEFT JOIN credit_scores cs ON cs.member_id = m.id
+                ORDER BY score ASC, m.full_name ASC';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * @return CreditScoreHistory[]
      */
     public function historyForMember(int $memberId): array

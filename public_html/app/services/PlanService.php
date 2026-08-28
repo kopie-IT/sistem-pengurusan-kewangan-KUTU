@@ -126,17 +126,20 @@ final class PlanService
         $intervalSpec = self::FREQUENCY_INTERVALS[$plan->paymentFrequency] ?? 'P1M';
         $interval = new DateInterval($intervalSpec);
 
-        $members = $this->planMembers->allActiveForPlan($planId);
+        // Ensure plan_cycles rows exist for the plan so each schedule can be
+        // linked to its actual cycle row (plan_cycles.id), not a cycle number.
+        $cycleIds = $this->ensurePlanCycles($planId, $plan->numberOfCycles, $plan->startDate, $interval);
+
+        $members = $this->planMembers->allForPlan($planId, 'active');
         $count = 0;
 
         foreach ($members as $member) {
-            $base = new DateTimeImmutable($plan->startDate);
             for ($cycle = 1; $cycle <= $plan->numberOfCycles; $cycle++) {
-                $dueDate = $base->add($interval->multiply($cycle - 1))->format('Y-m-d');
+                $dueDate = $this->addInterval(new DateTimeImmutable($plan->startDate), $interval, $cycle - 1)->format('Y-m-d');
 
                 $this->schedules->create([
                     'plan_id'       => $planId,
-                    'plan_cycle_id' => $cycle,
+                    'plan_cycle_id' => $cycleIds[$cycle] ?? null,
                     'member_id'     => $member->memberId,
                     'due_date'      => $dueDate,
                     'amount'        => $plan->contributionAmount,
@@ -217,5 +220,58 @@ final class PlanService
     private function pdo(): PDO
     {
         return Database::connection();
+    }
+
+    /**
+     * Ensure a row exists in `plan_cycles` for every cycle of the plan, and
+     * return a map of cycle_no => plan_cycles.id. Existing rows are reused.
+     *
+     * @return array<int, int>
+     */
+    private function ensurePlanCycles(int $planId, int $numberOfCycles, string $startDate, DateInterval $interval): array
+    {
+        $pdo = Database::connection();
+        $map = [];
+
+        for ($cycle = 1; $cycle <= $numberOfCycles; $cycle++) {
+            $stmt = $pdo->prepare('SELECT id FROM plan_cycles WHERE plan_id = :plan_id AND cycle_no = :cycle_no LIMIT 1');
+            $stmt->execute([':plan_id' => $planId, ':cycle_no' => $cycle]);
+            $existing = (int) $stmt->fetchColumn();
+
+            if ($existing > 0) {
+                $map[$cycle] = $existing;
+                continue;
+            }
+
+            $start = $this->addInterval(new DateTimeImmutable($startDate), $interval, $cycle - 1);
+            $end   = $this->addInterval($start, $interval, 1)->modify('-1 day');
+
+            $insert = $pdo->prepare(
+                'INSERT INTO plan_cycles (plan_id, cycle_no, start_date, end_date, status)
+                 VALUES (:plan_id, :cycle_no, :start_date, :end_date, :status)'
+            );
+            $insert->execute([
+                ':plan_id'    => $planId,
+                ':cycle_no'   => $cycle,
+                ':start_date' => $start->format('Y-m-d'),
+                ':end_date'   => $end->format('Y-m-d'),
+                ':status'     => 'upcoming',
+            ]);
+            $map[$cycle] = (int) $pdo->lastInsertId();
+        }
+
+        return $map;
+    }
+
+    /**
+     * Add a DateInterval a given number of times (DateTimeImmutable is
+     * immutable, so this is safe across calls).
+     */
+    private function addInterval(DateTimeImmutable $date, DateInterval $interval, int $times): DateTimeImmutable
+    {
+        for ($i = 0; $i < $times; $i++) {
+            $date = $date->add($interval);
+        }
+        return $date;
     }
 }

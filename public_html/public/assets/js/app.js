@@ -100,6 +100,7 @@
         initMobileNav();
         initFlash();
         initForms();
+        initPasswordToggle();
         highlightActiveNav();
     });
 })();

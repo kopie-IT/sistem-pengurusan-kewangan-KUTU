@@ -59,7 +59,11 @@ $adminRoutes = [
 ];
 foreach ($adminRoutes as [$method, $path, $label]) {
     $r = req($method, $baseUrl.$path, null, $cookies);
-    $ok = $r['status']===200;
+    $expectedRedirect = $path === '/admin/reports';
+    $redirectTarget = 'http://localhost:8090/admin/reports/financial';
+    $ok = $expectedRedirect
+        ? $r['status'] === 302 && loc($r['headers']) === $redirectTarget
+        : $r['status'] === 200;
     $detail = "status={$r['status']}";
     if (!$ok && $r['status']===302) $detail .= ' loc='.loc($r['headers']);
     if (!$ok && $r['status']===500) $detail .= ' '.substr($r['body'],0,200);
