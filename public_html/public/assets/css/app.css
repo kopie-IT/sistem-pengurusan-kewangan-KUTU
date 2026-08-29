@@ -871,6 +871,44 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .btn-block { width: 100%; }
 .btn-lg { padding: 0.95rem 1.5rem; font-size: 1rem; border-radius: var(--radius-lg); }
+.btn-sm { padding: 0.4rem 0.75rem; font-size: 0.8125rem; border-radius: var(--radius-md); }
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.125rem;
+    height: 2.125rem;
+    padding: 0;
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+    position: relative;
+}
+.btn-icon svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    pointer-events: none;
+}
+.btn-icon.btn-sm {
+    width: 1.95rem;
+    height: 1.95rem;
+}
+.btn-icon.btn-sm svg {
+    width: 0.95rem;
+    height: 0.95rem;
+}
+.btn-danger-ghost {
+    color: var(--color-rose-600);
+}
+.btn-danger-ghost:hover {
+    background: #ffe4e6;
+    color: #e11d48;
+}
+.table-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: nowrap;
+}
 
 /* Auth Layout ---------------------------------------------------------- */
 .auth-shell {

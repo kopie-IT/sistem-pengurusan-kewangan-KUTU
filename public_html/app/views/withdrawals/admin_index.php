@@ -56,14 +56,16 @@ $statusBadge = function (?string $st): string {
                                 <td><span class="badge badge-<?= $statusBadge($w->status ?? null) ?>"><?= e(ucfirst($w->status ?? 'menunggu')) ?></span></td>
                                 <td class="wrap">
                                     <?php if (($w->status ?? '') === 'pending'): ?>
-                                        <form method="POST" action="<?= url('/admin/withdrawals/' . $w->id . '/decision') ?>" style="display:inline-block;">
+                                        <form method="POST" action="<?= url('/admin/withdrawals/' . $w->id . '/decision') ?>" style="display:inline-flex; align-items: center; gap: 0.35rem;">
                                             <?= csrf_field() ?>
-                                            <select name="status" class="form-control" style="max-width: 140px; display:inline-block;">
+                                            <select name="status" class="form-control" style="max-width: 110px; display:inline-block; font-size: 0.8125rem; padding: 0.35rem 0.5rem;">
                                                 <option value="approved">Lulus</option>
                                                 <option value="rejected">Tolak</option>
                                             </select>
-                                            <input type="text" name="notes" class="form-control" placeholder="Nota" style="max-width: 130px; display:inline-block;">
-                                            <button type="submit" class="btn btn-primary btn-sm">Hantar</button>
+                                            <input type="text" name="notes" class="form-control" placeholder="Nota" style="max-width: 110px; display:inline-block; font-size: 0.8125rem; padding: 0.35rem 0.5rem;">
+                                            <button type="submit" class="btn btn-primary btn-sm btn-icon" title="Hantar Keputusan" aria-label="Hantar Keputusan">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                            </button>
                                         </form>
                                     <?php else: ?>
                                         <span class="muted small">-</span>

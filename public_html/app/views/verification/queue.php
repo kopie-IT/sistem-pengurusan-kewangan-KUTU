@@ -123,9 +123,8 @@ $statusBadge = function (?string $st): array {
                         </td>
                         <td>
                             <?php if ($slipId): ?>
-                                <button type="button" class="btn btn-ghost btn-sm" onclick="openSlipModal('<?= url('/file/slip/' . $slipId) ?>', '<?= e($batchNo) ?>', '<?= e($mName) ?>')" title="Lihat Slip Bayaran">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                    Lihat Slip
+                                <button type="button" class="btn btn-ghost btn-sm btn-icon" onclick="openSlipModal('<?= url('/file/slip/' . $slipId) ?>', '<?= e($batchNo) ?>', '<?= e($mName) ?>')" title="Lihat Slip Bayaran" aria-label="Lihat Slip Bayaran">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                                 </button>
                             <?php else: ?>
                                 <span class="muted small">-</span>
@@ -139,9 +138,15 @@ $statusBadge = function (?string $st): array {
                             <span class="badge <?= $badgeInfo['class'] ?>"><?= e($badgeInfo['label']) ?></span>
                         </td>
                         <td class="wrap">
-                            <a href="<?= url('/admin/payments/' . $bId) ?>" class="btn <?= in_array($st, ['pending_verification', 'submitted', 'pending'], true) ? 'btn-primary' : 'btn-secondary' ?> btn-sm">
-                                <?= in_array($st, ['pending_verification', 'submitted', 'pending'], true) ? 'Sahkan' : 'Butiran' ?>
-                            </a>
+                            <div class="table-actions">
+                                <a href="<?= url('/admin/payments/' . $bId) ?>" class="btn <?= in_array($st, ['pending_verification', 'submitted', 'pending'], true) ? 'btn-primary' : 'btn-secondary' ?> btn-sm btn-icon" title="<?= in_array($st, ['pending_verification', 'submitted', 'pending'], true) ? 'Sahkan Bayaran' : 'Lihat Butiran Bayaran' ?>" aria-label="<?= in_array($st, ['pending_verification', 'submitted', 'pending'], true) ? 'Sahkan Bayaran' : 'Lihat Butiran Bayaran' ?>">
+                                    <?php if (in_array($st, ['pending_verification', 'submitted', 'pending'], true)): ?>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <?php else: ?>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <?php endif; ?>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>

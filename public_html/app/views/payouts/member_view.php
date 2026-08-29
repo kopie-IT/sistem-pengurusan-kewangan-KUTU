@@ -56,7 +56,11 @@ $statusBadge = function (?string $st): string {
                                 <td><span class="badge badge-<?= $statusBadge($p->status ?? null) ?>"><?= e(ucfirst($p->status ?? 'menunggu')) ?></span></td>
                                 <td>
                                     <?php if (($p->status ?? '') === 'paid'): ?>
-                                        <a href="<?= url('/file/payout/' . ($p->id ?? '')) ?>" class="btn btn-ghost btn-sm">Lihat Slip</a>
+                                        <div class="table-actions">
+                                            <a href="<?= url('/file/payout/' . ($p->id ?? '')) ?>" class="btn btn-ghost btn-sm btn-icon" title="Lihat Slip Payout" aria-label="Lihat Slip Payout">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                            </a>
+                                        </div>
                                     <?php else: ?>
                                         <span class="muted small">-</span>
                                     <?php endif; ?>

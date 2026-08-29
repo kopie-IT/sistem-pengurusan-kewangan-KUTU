@@ -57,15 +57,17 @@ $statusBadge = function (?string $st): string {
                                 <td><span class="badge badge-<?= $statusBadge($sf->status ?? null) ?>"><?= e(ucfirst(str_replace('_', ' ', $sf->status ?? 'terbuka'))) ?></span></td>
                                 <td class="wrap">
                                     <?php if (($sf->status ?? '') === 'open' || ($sf->status ?? '') === 'under_review'): ?>
-                                        <form method="POST" action="<?= url('/admin/shortfalls/' . $sf->id . '/resolve') ?>" style="display:inline-block;">
+                                        <form method="POST" action="<?= url('/admin/shortfalls/' . $sf->id . '/resolve') ?>" style="display:inline-flex; align-items: center; gap: 0.35rem;">
                                             <?= csrf_field() ?>
-                                            <select name="resolution" class="form-control" style="max-width: 150px; display:inline-block;">
+                                            <select name="resolution" class="form-control" style="max-width: 120px; display:inline-block; font-size: 0.8125rem; padding: 0.35rem 0.5rem;">
                                                 <option value="covered">Ditampung</option>
                                                 <option value="waived">Dihapus</option>
                                                 <option value="member_topup">Ahli tambah</option>
                                             </select>
-                                            <input type="text" name="notes" class="form-control" placeholder="Nota" style="max-width: 140px; display:inline-block;">
-                                            <button type="submit" class="btn btn-primary btn-sm">Selesai</button>
+                                            <input type="text" name="notes" class="form-control" placeholder="Nota" style="max-width: 110px; display:inline-block; font-size: 0.8125rem; padding: 0.35rem 0.5rem;">
+                                            <button type="submit" class="btn btn-primary btn-sm btn-icon" title="Selesaikan Kekurangan" aria-label="Selesaikan Kekurangan">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                            </button>
                                         </form>
                                     <?php else: ?>
                                         <span class="muted small">-</span>
