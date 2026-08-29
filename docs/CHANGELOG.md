@@ -26,6 +26,13 @@ Format mengikut Keep a Changelog.
 - Menambah route `GET /admin/settings/database` dalam [web.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/routes/web.php) dan action `database()` dalam [AdminSettingsController.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/controllers/AdminSettingsController.php).
 - Mengemas kini pautan sidebar **Pangkalan Data** dalam [sidebar.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/partials/sidebar.php) supaya merujuk ke halaman khusus.
 
+### Added - Butang Reset Data (Zon Bahaya)
+- Menambah butang "Reset Semua Data" di halaman [database.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/admin/database.php) dengan modal amaran keselamatan.
+- Menambah endpoint `POST /admin/settings/database/reset` dalam [web.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/routes/web.php) dan action `resetData()` dalam [AdminSettingsController.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/controllers/AdminSettingsController.php).
+- Pengesahan reset memerlukan pentadbir memasukkan kata laluan login mereka (disemak dengan `password_verify`), CSRF token, dan melalui modal amaran.
+- Reset akan mengosongkan semua jadual pangkalan data KECUALI `users`, `roles`, `user_roles`, `sessions`, `password_resets` (data akaun pentadbir/staf dipelihara).
+- Aktiviti reset berjaya & gagal akan direkodkan dalam log audit keselamatan (`AuditService`).
+
 ### Fixed - Penyelarasan Tarikh Mula & Tarikh Tamat Kitaran Pelan
 - Mengemaskini `PlanService::ensurePlanCycles` ([PlanService.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/services/PlanService.php)) untuk mengira dan menyelaraskan `start_date` dan `end_date` bagi setiap kitaran secara seragam merentasi semua ahli pelan.
 

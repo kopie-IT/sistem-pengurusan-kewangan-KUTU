@@ -128,6 +128,37 @@ $totalTables = count($dbTables ?? []);
             </div>
         </div>
 
+        <!-- Reset Data Card (Danger Zone) -->
+        <div class="card" style="padding: 1.5rem 1.75rem; border: 2px solid #fecaca; border-radius: 12px; background: #fef2f2; margin-bottom: 2rem;">
+            <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                <div style="width: 52px; height: 52px; border-radius: 10px; background: #fee2e2; color: #b91c1c; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                </div>
+                <div style="flex: 1;">
+                    <h2 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #991b1b;">Zon Bahaya — Reset Data Sistem</h2>
+                    <p class="muted" style="margin-top: 0.35rem; line-height: 1.6; color: #7f1d1d;">
+                        Tindakan ini akan <strong>mengosongkan semua rekod</strong> dalam pangkalan data termasuk ahli, pelan, jadual, caruman, payout, transaksi, dan lain-lain.
+                        <br>
+                        <strong>Dipelihara:</strong> Akaun pentadbir &amp; staf (jadual <code>users</code>, <code>roles</code>, <code>user_roles</code>, <code>sessions</code>, <code>password_resets</code>) supaya anda boleh log masuk semula selepas reset.
+                    </p>
+                    <button type="button" class="btn btn-danger" onclick="document.getElementById('resetDataModal').style.display = 'flex';" style="background: #dc2626; color: #fff; border: 0; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1.2rem; font-weight: 600;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                            <path d="M10 11v6"/>
+                            <path d="M14 11v6"/>
+                            <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        <span>Reset Semua Data Sekarang</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Database Inventory -->
         <?php if (!empty($dbTables)): ?>
             <div class="card" style="padding: 1.5rem; background: var(--bg-surface, #fff);">
@@ -159,3 +190,88 @@ $totalTables = count($dbTables ?? []);
         <?php endif; ?>
     </div>
 </section>
+
+<!-- Reset Data Confirmation Modal -->
+<div id="resetDataModal" role="dialog" aria-modal="true" aria-labelledby="resetDataModalTitle" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(4px);">
+    <div style="background: #ffffff; max-width: 520px; width: 100%; border-radius: 14px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4); overflow: hidden; animation: modalPop 200ms ease-out;">
+        <div style="padding: 1.5rem 1.75rem; background: linear-gradient(135deg, #dc2626, #991b1b); color: #fff; display: flex; align-items: center; gap: 0.85rem;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            </div>
+            <div>
+                <h3 id="resetDataModalTitle" style="margin: 0; font-size: 1.2rem; font-weight: 700;">AMARAN: Tindakan Tidak Boleh Dibatalkan</h3>
+                <p style="margin: 0.15rem 0 0; font-size: 0.85rem; opacity: 0.9;">Sila baca dengan teliti sebelum meneruskan.</p>
+            </div>
+        </div>
+
+        <div style="padding: 1.5rem 1.75rem;">
+            <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 0.85rem 1rem; border-radius: 6px; margin-bottom: 1.25rem; color: #78350f;">
+                <strong>Adakah anda pasti?</strong> Semua rekod (ahli, pelan, jadual, caruman, payout, transaksi) akan <strong>dihapuskan secara kekal</strong> dan tidak boleh dipulihkan.
+            </div>
+
+            <ul style="margin: 0 0 1.25rem 0; padding-left: 1.25rem; line-height: 1.7; color: #475569;">
+                <li>Hanya akaun pentadbir &amp; staf akan dipelihara (<code>users</code>, <code>roles</code>, <code>sessions</code>).</li>
+                <li>Tindakan ini akan direkodkan dalam log audit keselamatan.</li>
+                <li>Disyorkan supaya <strong>membuat eksport SQL</strong> terlebih dahulu sebagai sandaran.</li>
+            </ul>
+
+            <form method="POST" action="<?= url('/admin/settings/database/reset') ?>" id="resetDataForm" onsubmit="return confirm('PENGESAHAN AKHIR: Adakah anda benar-benar pasti mahu menghapuskan semua data sistem? Tindakan ini TIDAK BOLEH DIPULIHKAN.');">
+                <?= csrf_field() ?>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="confirm_password" class="form-label" style="font-weight: 600; color: #991b1b;">Masukkan Kata Laluan Pentadbir Untuk Pengesahan</label>
+                    <input type="password" id="confirm_password" name="confirm_password" class="form-control" required autocomplete="current-password" placeholder="Kata laluan anda" style="padding: 0.65rem 0.85rem; font-size: 1rem;">
+                    <p class="form-help" style="color: #7f1d1d; margin-top: 0.4rem; font-size: 0.82rem;">Hanya pentadbir yang sedang log masuk boleh melakukan reset.</p>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('resetDataModal').style.display = 'none'; document.getElementById('confirm_password').value = '';">Batal</button>
+                    <button type="submit" class="btn btn-danger" style="background: #dc2626; color: #fff; border: 0; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1.2rem; font-weight: 600;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                            <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        <span>Ya, Reset Semua Data</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes modalPop {
+    from { transform: scale(0.92); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('resetDataModal');
+    if (!modal) return;
+
+    // Close on backdrop click
+    modal.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+            var input = document.getElementById('confirm_password');
+            if (input) input.value = '';
+        }
+    });
+
+    // Close on ESC
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && modal.style.display === 'flex') {
+            modal.style.display = 'none';
+            var input = document.getElementById('confirm_password');
+            if (input) input.value = '';
+        }
+    });
+});
+</script>

@@ -176,6 +176,7 @@ $router->post('/admin/settings/blast',          [AdminSettingsController::class,
 $router->get('/admin/settings/database',        [AdminSettingsController::class, 'database'],       'admin.settings.database', $superAdmin);
 $router->get('/admin/settings/database/export', [AdminSettingsController::class, 'exportDatabase'], 'admin.database.export', $superAdmin);
 $router->post('/admin/settings/database/import',[AdminSettingsController::class, 'importDatabase'], 'admin.database.import', $superAdmin);
+$router->post('/admin/settings/database/reset', [AdminSettingsController::class, 'resetData'],      'admin.database.reset',  $superAdmin);
 
 // Internal user management (admin / super_admin / staff) — admin + super_admin only.
 $router->get('/admin/users',                 [UserManagementController::class, 'index'],   'admin.users',          $superAdmin);

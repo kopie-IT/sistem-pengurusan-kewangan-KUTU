@@ -72,6 +72,98 @@ final class AdminSettingsController extends Controller
     }
 
     /**
+     * Reset all data tables except users (admin/staff login info retained).
+     */
+    public function resetData(): void
+    {
+        $token = (string) ($_POST['csrf_token'] ?? '');
+        if (!hash_equals((string) ($_SESSION['csrf_token'] ?? ''), $token)) {
+            set_flash('error', 'Sesi tidak sah. Sila cuba lagi.');
+            $this->redirect('/admin/settings/database');
+        }
+
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+        if ($userId <= 0) {
+            set_flash('error', 'Sesi pentadbir tidak sah.');
+            $this->redirect('/admin/settings/database');
+        }
+
+        $password = (string) ($_POST['confirm_password'] ?? '');
+        if ($password === '') {
+            set_flash('error', 'Sila masukkan kata laluan pentadbir untuk pengesahan.');
+            $this->redirect('/admin/settings/database');
+        }
+
+        $userRepo = new \App\Repositories\UserRepository();
+        $currentUser = $userRepo->findById($userId);
+        if (!$currentUser || !password_verify($password, (string) ($currentUser->password ?? ''))) {
+            AuditService::log('database.reset.failed', $userId, 'system', null, [
+                'reason' => 'invalid_password',
+            ]);
+            set_flash('error', 'Kata laluan pentadbir tidak tepat. Reset dibatalkan.');
+            $this->redirect('/admin/settings/database');
+        }
+
+        try {
+            $pdo = \App\Core\Database::connection();
+            $pdo->beginTransaction();
+
+            $dbName = (string) $pdo->query('SELECT DATABASE()')->fetchColumn();
+
+            $tablesStmt = $pdo->prepare(
+                'SELECT TABLE_NAME
+                   FROM information_schema.TABLES
+                  WHERE TABLE_SCHEMA = :db
+                    AND TABLE_TYPE = \'BASE TABLE\''
+            );
+            $tablesStmt->execute([':db' => $dbName]);
+            $allTables = $tablesStmt->fetchAll(\PDO::FETCH_COLUMN);
+
+            // Tables to KEEP — users & their authentication scaffolding.
+            $preserve = [
+                'users',
+                'roles',
+                'user_roles',
+                'password_resets',
+                'sessions',
+            ];
+
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+            $truncated = [];
+            foreach ($allTables as $table) {
+                $tableName = (string) $table;
+                if (in_array($tableName, $preserve, true)) {
+                    continue;
+                }
+                $safeName = str_replace('`', '``', $tableName);
+                $pdo->exec("TRUNCATE TABLE `{$safeName}`");
+                $truncated[] = $tableName;
+            }
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+            $pdo->commit();
+
+            AuditService::log('database.reset', $userId, 'system', null, [
+                'tables_truncated' => count($truncated),
+            ]);
+
+            set_flash('success', sprintf(
+                'Reset data berjaya! %d jadual telah dikosongkan. Data pentadbir & staf dipelihara.',
+                count($truncated)
+            ));
+        } catch (\Throwable $e) {
+            if (isset($pdo) && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            AuditService::log('database.reset.failed', $userId, 'system', null, [
+                'error' => $e->getMessage(),
+            ]);
+            set_flash('error', 'Gagal melakukan reset data: ' . $e->getMessage());
+        }
+
+        $this->redirect('/admin/settings/database');
+    }
+
+    /**
      * Export database to downloadable SQL file.
      */
     public function exportDatabase(): void
