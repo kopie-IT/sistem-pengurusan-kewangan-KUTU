@@ -79,7 +79,7 @@ final class View
 
             $html .= '<div class="flash flash-' . $key . '" role="alert" data-flash>'
                 . '<span class="flash-icon" aria-hidden="true">' . $icon . '</span>'
-                . '<div class="flash-body">' . self::e($message) . '</div>'
+                . '<div class="flash-body">' . strip_tags($message, '<a><strong><em><span><code><br>') . '</div>'
                 . '<button type="button" class="flash-close" aria-label="Tutup">&times;</button>'
                 . '</div>';
         }

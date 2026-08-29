@@ -37,17 +37,22 @@ final class PayoutController extends Controller
     public function adminIndex(): void
     {
         $planId = (int) ($_GET['plan_id'] ?? 0);
+        $status = trim((string) ($_GET['status'] ?? ''));
+        $search = trim((string) ($_GET['search'] ?? ''));
         $plan = $planId > 0 ? $this->plans->findById($planId) : null;
-        $schedules = $planId > 0 ? $this->schedules->allForPlan($planId) : [];
-        $payouts = $planId > 0 ? $this->payoutRepo->allForPlan($planId) : [];
         $plans = $this->plans->all();
+        $schedules = $this->schedules->allWithDetails($planId > 0 ? $planId : null, $status !== '' ? $status : null, $search !== '' ? $search : null);
+        $stats = $this->schedules->statsSummary($planId > 0 ? $planId : null);
 
         $this->view('payouts/admin_index', [
-            'title'     => 'Urus Pembayaran',
-            'plan'      => $plan,
-            'plans'     => $plans,
-            'schedules' => $schedules,
-            'payouts'   => $payouts,
+            'title'      => 'Urus Pembayaran & Payout',
+            'plan'       => $plan,
+            'plans'      => $plans,
+            'planFilter' => $planId > 0 ? $planId : null,
+            'schedules'  => $schedules,
+            'stats'      => $stats,
+            'search'     => $search,
+            'status'     => $status,
         ]);
     }
 

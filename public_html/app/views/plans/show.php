@@ -87,5 +87,137 @@
                 </div>
             </div>
         <?php endif; ?>
+
+        <!-- Jadual Giliran Pelan (Jana Jadual) -->
+        <div class="card mt-4" id="jadual">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                    <h2 class="card-title" style="margin: 0;">Jadual Kitaran &amp; Giliran Payout</h2>
+                    <p class="muted small" style="margin-top: 0.25rem;">Jadual penuh setiap kitaran dan penerima wang kutu yang telah dijana untuk pelan ini.</p>
+                </div>
+                <?php if (!empty($isAdmin)): ?>
+                    <form method="POST" action="<?= url('/admin/plans/' . $plan->id . '/generate') ?>" style="display:inline;">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn btn-secondary btn-sm">&#x21bb; Jana Semula Jadual</button>
+                    </form>
+                <?php endif; ?>
+            </div>
+
+            <?php if (empty($cycles)): ?>
+                <div style="padding: 2rem; text-align: center; background: rgba(0,0,0,0.02); border-radius: 8px;">
+                    <p class="muted">Jadual kitaran belum dijana untuk pelan ini.</p>
+                    <?php if (!empty($isAdmin)): ?>
+                        <form method="POST" action="<?= url('/admin/plans/' . $plan->id . '/generate') ?>" style="margin-top: 0.75rem;">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-primary btn-sm">Jana Jadual Sekarang</button>
+                        </form>
+                    <?php endif; ?>
+                </div>
+            <?php else: ?>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Kitaran</th>
+                                <th>Tarikh Mula</th>
+                                <th>Tarikh Tamat</th>
+                                <th>Tarikh Bayaran Payout</th>
+                                <th>Penerima Giliran Kutu</th>
+                                <th>Jumlah Payout</th>
+                                <th>Status Giliran</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($cycles as $c): ?>
+                                <?php
+                                    $pStatus = strtolower((string) ($c['payout_status'] ?? $c['status'] ?? 'scheduled'));
+                                    $statusBadgeClass = match ($pStatus) {
+                                        'paid' => 'badge-success',
+                                        'due' => 'badge-warning',
+                                        'processing' => 'badge-info',
+                                        'scheduled' => 'badge-primary',
+                                        'cancelled' => 'badge-danger',
+                                        default => 'badge-neutral',
+                                    };
+                                    $statusLabel = match ($pStatus) {
+                                        'paid' => 'Selesai Dibayar',
+                                        'due' => 'Perlu Dibayar (Hari Ini)',
+                                        'processing' => 'Sedang Diproses',
+                                        'scheduled' => 'Akan Datang (Berjadual)',
+                                        'cancelled' => 'Dibatalkan',
+                                        default => ucfirst($pStatus),
+                                    };
+                                ?>
+                                <tr>
+                                    <td><span class="badge badge-neutral">Kitaran <?= e((string) ($c['cycle_no'] ?? '-')) ?></span></td>
+                                    <td><?= e((string) ($c['start_date'] ?? '-')) ?></td>
+                                    <td><?= e((string) ($c['end_date'] ?? '-')) ?></td>
+                                    <td>
+                                        <strong><?= e((string) ($c['payout_date'] ?? $c['start_date'] ?? '-')) ?></strong>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($c['recipient_name'])): ?>
+                                            <div style="font-weight: 600; color: #1e293b;"><?= e((string) $c['recipient_name']) ?></div>
+                                            <?php if (!empty($c['recipient_code'])): ?>
+                                                <span class="muted small"><?= e((string) $c['recipient_code']) ?></span>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <span class="muted">Belum Ditentukan</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (isset($c['payout_amount'])): ?>
+                                            <strong style="color: #16a34a; font-size: 1rem;"><?= format_money((string) $c['payout_amount']) ?></strong>
+                                        <?php else: ?>
+                                            <span class="muted">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <span class="badge <?= $statusBadgeClass ?>">
+                                            <?= e($statusLabel) ?>
+                                        </span>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <?php if (!empty($mySchedules)): ?>
+            <div class="card mt-4">
+                <h2 class="card-title">Jadual Caruman Saya</h2>
+                <p class="muted small">Senarai tarikh akhir caruman anda untuk pelan ini.</p>
+                <div class="table-wrap mt-3">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Kitaran</th>
+                                <th>Tarikh Akhir (Due Date)</th>
+                                <th>Jumlah Perlu Bayar</th>
+                                <th>Jumlah Dibayar</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($mySchedules as $ms): ?>
+                                <tr>
+                                    <td>Kitaran <?= e((string) ($ms['cycle_no'] ?? '-')) ?></td>
+                                    <td><?= e((string) ($ms['due_date'] ?? '-')) ?></td>
+                                    <td><?= format_money((string) ($ms['amount'] ?? 0)) ?></td>
+                                    <td><?= format_money((string) ($ms['amount_paid'] ?? 0)) ?></td>
+                                    <td>
+                                        <span class="badge badge-<?= ($ms['status'] ?? '') === 'paid' ? 'success' : (($ms['status'] ?? '') === 'overdue' ? 'danger' : 'warning') ?>">
+                                            <?= e(ucfirst((string) ($ms['status'] ?? 'pending'))) ?>
+                                        </span>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        <?php endif; ?>
     </div>
 </section>

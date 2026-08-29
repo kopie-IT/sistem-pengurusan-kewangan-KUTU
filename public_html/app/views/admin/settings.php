@@ -37,436 +37,424 @@ $statusTone = static function (string $s): string {
     };
 };
 ?>
-<section class="page-header">
+<div class="page-header" style="margin-bottom: 2rem;">
     <div>
-        <span class="page-eyebrow">Pentadbiran</span>
-        <h1 class="page-title">Tetapan Sistem</h1>
-        <p class="page-subtitle">Urus identiti, komunikasi, integrasi, dan operasi sistem dari satu pusat kawalan.</p>
+        <span class="page-eyebrow">Pentadbiran Sistem</span>
+        <h1 class="page-title">Tetapan Sistem &amp; Integrasi</h1>
+        <p class="page-subtitle muted">Urus konfigurasi jenama, email blast, gateway WhatsApp, keselamatan dan maklumat operasi.</p>
     </div>
-</section>
+</div>
 
 <?= flash_messages() ?>
 
 <?php if (empty($blastTableReady)): ?>
-    <div class="alert alert-warning" role="alert" style="margin-bottom: var(--space-4);">
+    <div class="alert alert-warning" role="alert" style="margin-bottom: 1.5rem;">
         <strong>Jadual <code>email_blasts</code> belum dicipta.</strong>
-        Sejarah email blast tidak boleh dipaparkan. Jalankan
-        <code>database/migrations/005_system_config.sql</code> pada pangkalan
-        data untuk mengaktifkannya.
+        Sejarah email blast tidak boleh dipaparkan. Jalankan migrasi <code>005_system_config.sql</code> untuk mengaktifkannya.
     </div>
 <?php endif; ?>
 
-<div class="settings-tabs" role="tablist" aria-label="Bahagian tetapan">
-    <a href="#tab-identity"   class="settings-tab is-active" role="tab" aria-selected="true" data-tab="identity">1. Identiti &amp; QR</a>
-    <a href="#tab-blaster"    class="settings-tab" role="tab" aria-selected="false" data-tab="blaster">2. Email Blast</a>
-    <a href="#tab-wapnet"     class="settings-tab" role="tab" aria-selected="false" data-tab="wapnet">3. wap.net (WhatsApp)</a>
-    <a href="#tab-operations" class="settings-tab" role="tab" aria-selected="false" data-tab="operations">4. Operasi &amp; Hubungan</a>
-    <a href="#tab-security"   class="settings-tab" role="tab" aria-selected="false" data-tab="security">5. Keselamatan &amp; CAPTCHA</a>
+<!-- Quick Status Cards Grid -->
+<div class="grid grid-4" style="margin-bottom: 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+    <div class="card" style="padding: 1.25rem; border-left: 4px solid var(--primary, #3b82f6); background: var(--bg-surface, #fff);">
+        <span class="muted small">Email Blaster</span>
+        <div style="margin-top: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <strong style="font-size: 1.1rem;"><?= $emailBlastEnabled ? 'Aktif' : 'Dinyahaktif' ?></strong>
+            <span class="badge badge-<?= $emailBlastEnabled ? 'success' : 'neutral' ?>"><?= $emailBlastEnabled ? 'ON' : 'OFF' ?></span>
+        </div>
+    </div>
+    <div class="card" style="padding: 1.25rem; border-left: 4px solid #10b981; background: var(--bg-surface, #fff);">
+        <span class="muted small">WhatsApp (wap.net)</span>
+        <div style="margin-top: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <strong style="font-size: 1.1rem;"><?= $wapnetEnabled ? 'Aktif' : 'Dinyahaktif' ?></strong>
+            <span class="badge badge-<?= $wapnetEnabled ? 'success' : 'neutral' ?>"><?= $wapnetEnabled ? 'ON' : 'OFF' ?></span>
+        </div>
+    </div>
+    <div class="card" style="padding: 1.25rem; border-left: 4px solid #8b5cf6; background: var(--bg-surface, #fff);">
+        <span class="muted small">Logo &amp; Penjenamaan</span>
+        <div style="margin-top: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <strong style="font-size: 1.1rem;"><?= $logoPath ? 'Tersedia' : 'Lalai' ?></strong>
+            <span class="badge badge-<?= $logoPath ? 'success' : 'neutral' ?>"><?= $logoPath ? 'Custom' : 'Default' ?></span>
+        </div>
+    </div>
+    <div class="card" style="padding: 1.25rem; border-left: 4px solid #f59e0b; background: var(--bg-surface, #fff);">
+        <span class="muted small">Sistem Keselamatan</span>
+        <div style="margin-top: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <strong style="font-size: 1.1rem;"><?= !empty($systemConfig['captcha_enabled']) ? 'CAPTCHA Aktif' : 'Standard' ?></strong>
+            <span class="badge badge-<?= !empty($systemConfig['captcha_enabled']) ? 'success' : 'warning' ?>"><?= !empty($systemConfig['captcha_enabled']) ? 'Protected' : 'Standard' ?></span>
+        </div>
+    </div>
 </div>
 
-<form method="POST" action="<?= url('/admin/settings') ?>" enctype="multipart/form-data" class="form-grid" novalidate>
+<!-- Modern Tab Navigation -->
+<div class="settings-tabs" role="tablist" aria-label="Bahagian tetapan" style="display: flex; gap: 0.5rem; border-bottom: 2px solid var(--border, #e2e8f0); margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 2px;">
+    <a href="#tab-identity" class="settings-tab is-active" role="tab" aria-selected="true" data-tab="identity" style="padding: 0.75rem 1.25rem; font-weight: 600; text-decoration: none; border-radius: 6px 6px 0 0;">1. Identiti &amp; QR</a>
+    <a href="#tab-blaster" class="settings-tab" role="tab" aria-selected="false" data-tab="blaster" style="padding: 0.75rem 1.25rem; font-weight: 600; text-decoration: none; border-radius: 6px 6px 0 0;">2. Email Blast</a>
+    <a href="#tab-wapnet" class="settings-tab" role="tab" aria-selected="false" data-tab="wapnet" style="padding: 0.75rem 1.25rem; font-weight: 600; text-decoration: none; border-radius: 6px 6px 0 0;">3. WhatsApp (wap.net)</a>
+    <a href="#tab-operations" class="settings-tab" role="tab" aria-selected="false" data-tab="operations" style="padding: 0.75rem 1.25rem; font-weight: 600; text-decoration: none; border-radius: 6px 6px 0 0;">4. Operasi &amp; Hubungan</a>
+    <a href="#tab-security" class="settings-tab" role="tab" aria-selected="false" data-tab="security" style="padding: 0.75rem 1.25rem; font-weight: 600; text-decoration: none; border-radius: 6px 6px 0 0;">5. Keselamatan &amp; CAPTCHA</a>
+</div>
+
+<form method="POST" action="<?= url('/admin/settings') ?>" enctype="multipart/form-data" novalidate>
     <?= csrf_field() ?>
 
-    <div class="settings-grid">
-        <div class="card">
-            <div class="card-body">
-
-                <!-- TAB: Identity / QR ---------------------------------------------- -->
-                <section class="settings-pane is-active" data-pane="identity" aria-labelledby="tab-identity">
-                    <h2 class="card-heading" id="tab-identity">Identiti &amp; QR Pembayaran</h2>
-                    <p class="muted">Nama, tagline, logo, dan QR lalai untuk sistem &amp; ahli tanpa pelan khusus.</p>
-
-                    <div class="form-group">
-                        <label for="app_name" class="form-label">Nama Sistem</label>
-                        <input type="text" id="app_name" name="app_name" required maxlength="150"
-                               value="<?= e($appName) ?>" class="form-control"
-                               placeholder="cth: Sistem Pengurusan Main Kutu">
-                        <p class="form-help">Maksimum 150 aksara. Dipaparkan di tajuk halaman, header, dan footer.</p>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="brand_tagline" class="form-label">Tagline</label>
-                        <input type="text" id="brand_tagline" name="brand_tagline" maxlength="200"
-                               value="<?= e($tagline) ?>" class="form-control"
-                               placeholder="Tagline ringkas untuk halaman awam">
-                        <p class="form-help">Pilihan. Digunakan di footer dan halaman pemasaran.</p>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="logo" class="form-label">Logo</label>
-                        <div class="logo-uploader">
-                            <div class="logo-preview" aria-live="polite">
-                                <?php if ($logoPath): ?>
-                                    <img src="<?= url('/brand/logo') ?>" alt="Logo semasa">
-                                    <small>Logo semasa</small>
-                                <?php else: ?>
-                                    <div class="logo-placeholder" aria-hidden="true">MK</div>
-                                    <small>Tiada logo ditetapkan</small>
-                                <?php endif; ?>
-                            </div>
-                            <div class="logo-fields">
-                                <input type="file" id="logo" name="logo" accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                                       class="form-control">
-                                <p class="form-help">Format dibenarkan: PNG, JPG, SVG, WEBP. Maksimum 2 MB.</p>
-                                <?php if ($logoPath): ?>
-                                    <label class="checkbox-row">
-                                        <input type="checkbox" name="remove_logo" value="1">
-                                        <span>Buang logo semasa</span>
-                                    </label>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="payment_qr" class="form-label">QR Pembayaran (Sistem)</label>
-                        <p class="form-help" style="margin-top:0;">QR lalai untuk ahli yang tiada pelan khusus. Setiap pelan boleh menukar QR sendiri.</p>
-                        <div class="qr-uploader">
-                            <div class="qr-preview" aria-live="polite">
-                                <?php if ($qrPath): ?>
-                                    <img src="<?= url('/brand/qr') ?>" alt="QR pembayaran semasa">
-                                <?php else: ?>
-                                    <span class="qr-empty">Tiada QR ditetapkan</span>
-                                <?php endif; ?>
-                            </div>
-                            <div class="qr-fields">
-                                <input type="file" id="payment_qr" name="payment_qr"
-                                       accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                                       class="form-control">
-                                <p class="form-help">Format dibenarkan: PNG, JPG, SVG, WEBP. Maksimum 2 MB.</p>
-                                <?php if ($qrPath): ?>
-                                    <label class="checkbox-row">
-                                        <input type="checkbox" name="remove_qr" value="1">
-                                        <span>Buang QR semasa</span>
-                                    </label>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- TAB: Email blast ---------------------------------------------- -->
-                <section class="settings-pane" data-pane="blaster" aria-labelledby="tab-blaster" hidden>
-                    <h2 class="card-heading" id="tab-blaster">Email Blast</h2>
-                    <p class="muted">Aktifkan hantar emel pukal kepada ahli / pentadbir. Setiap blast akan direkodkan dalam log di bawah.</p>
-
-                    <div class="form-group">
-                        <label class="checkbox-row">
-                            <input type="checkbox" name="email_blast_enabled" value="1" <?= $emailBlastEnabled ? 'checked' : '' ?>>
-                            <span><strong>Aktifkan email blast</strong> &mdash; benarkan admin menghantar emel kepada pengguna.</span>
-                        </label>
-                    </div>
-
-                    <div class="form-group form-grid form-grid-2">
-                        <div>
-                            <label for="email_blast_from_name" class="form-label">Nama pengirim</label>
-                            <input type="text" id="email_blast_from_name" name="email_blast_from_name"
-                                   value="<?= e($emailBlastFromName) ?>" maxlength="100"
-                                   class="form-control" placeholder="Sistem Kutu">
-                        </div>
-                        <div>
-                            <label for="email_blast_from_email" class="form-label">Emel pengirim</label>
-                            <input type="email" id="email_blast_from_email" name="email_blast_from_email"
-                                   value="<?= e($emailBlastFromEmail) ?>" maxlength="150"
-                                   class="form-control" placeholder="no-reply@contoh.my">
-                        </div>
-                    </div>
-                    <div class="form-group form-grid form-grid-2">
-                        <div>
-                            <label for="email_blast_reply_to" class="form-label">Reply-To (pilihan)</label>
-                            <input type="email" id="email_blast_reply_to" name="email_blast_reply_to"
-                                   value="<?= e($emailBlastReplyTo) ?>" maxlength="150"
-                                   class="form-control" placeholder="sokongan@contoh.my">
-                        </div>
-                        <div>
-                            <label for="email_blast_default_subject" class="form-label">Subjek lalai</label>
-                            <input type="text" id="email_blast_default_subject" name="email_blast_default_subject"
-                                   value="<?= e($emailBlastDefaultSubject) ?>" maxlength="200"
-                                   class="form-control" placeholder="Notis Penting daripada Sistem Kutu">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="email_blast_footer" class="form-label">Footer (pilihan)</label>
-                        <textarea id="email_blast_footer" name="email_blast_footer" rows="3" maxlength="800"
-                                  class="form-control"
-                                  placeholder="cth: --&#10;Pasukan Sistem Kutu&#10;Hubungi: 03-XXXXXXX"><?= e($emailBlastFooter) ?></textarea>
-                        <p class="form-help">Dipaparkan di akhir setiap blast.</p>
-                    </div>
-                </section>
-
-                <!-- TAB: wap.net -------------------------------------------------- -->
-                <section class="settings-pane" data-pane="wapnet" aria-labelledby="tab-wapnet" hidden>
-                    <h2 class="card-heading" id="tab-wapnet">wap.net (WhatsApp Gateway)</h2>
-                    <p class="muted">Konfigurasi integrasi wap.net untuk notifikasi WhatsApp. Tetapan ini akan digunakan oleh perkhidmatan notifikasi apabila diaktifkan.</p>
-
-                    <div class="form-group">
-                        <label class="checkbox-row">
-                            <input type="checkbox" name="wapnet_enabled" value="1" <?= $wapnetEnabled ? 'checked' : '' ?>>
-                            <span><strong>Aktifkan wap.net</strong> &mdash; benarkan sistem menghantar notifikasi WhatsApp.</span>
-                        </label>
-                    </div>
-
-                    <div class="form-group form-grid form-grid-2">
-                        <div>
-                            <label for="wapnet_api_url" class="form-label">API URL</label>
-                            <input type="url" id="wapnet_api_url" name="wapnet_api_url"
-                                   value="<?= e($wapnetApiUrl) ?>" maxlength="255"
-                                   class="form-control" placeholder="https://api.wap.net/v1/messages">
-                        </div>
-                        <div>
-                            <label for="wapnet_sender_id" class="form-label">Sender ID</label>
-                            <input type="text" id="wapnet_sender_id" name="wapnet_sender_id"
-                                   value="<?= e($wapnetSender) ?>" maxlength="100"
-                                   class="form-control" placeholder="cth: 60123456789">
-                        </div>
-                    </div>
-
-                    <div class="form-group form-grid form-grid-2">
-                        <div>
-                            <label for="wapnet_api_key" class="form-label">API Key</label>
-                            <input type="password" id="wapnet_api_key" name="wapnet_api_key"
-                                   value="<?= e($wapnetApiKey) ?>" maxlength="255"
-                                   class="form-control" placeholder="Token rahsia dari wap.net"
-                                   autocomplete="off">
-                            <p class="form-help">Tidak akan dipaparkan semula selepas disimpan — simpan nota sendiri.</p>
-                        </div>
-                        <div>
-                            <label for="wapnet_default_template" class="form-label">Template lalai</label>
-                            <input type="text" id="wapnet_default_template" name="wapnet_default_template"
-                                   value="<?= e($wapnetTemplate) ?>" maxlength="100"
-                                   class="form-control" placeholder="general_notification">
-                        </div>
-                    </div>
-                </section>
-
-                <!-- TAB: Operations / contact ------------------------------------ -->
-                <section class="settings-pane" data-pane="operations" aria-labelledby="tab-operations" hidden>
-                    <h2 class="card-heading" id="tab-operations">Operasi &amp; Hubungan</h2>
-                    <p class="muted">Maklumat hubungan yang digunakan dalam emel blast, footer sistem dan halaman sokongan.</p>
-
-                    <div class="form-group form-grid form-grid-2">
-                        <div>
-                            <label for="system_contact_phone" class="form-label">Telefon Helpdesk</label>
-                            <input type="text" id="system_contact_phone" name="system_contact_phone"
-                                   value="<?= e($contactPhone) ?>" maxlength="30"
-                                   class="form-control" placeholder="03-XXXXXXX">
-                        </div>
-                        <div>
-                            <label for="system_contact_email" class="form-label">Emel Helpdesk</label>
-                            <input type="email" id="system_contact_email" name="system_contact_email"
-                                   value="<?= e($contactEmail) ?>" maxlength="150"
-                                   class="form-control" placeholder="helpdesk@contoh.my">
-                        </div>
-                    </div>
-                </section>
-
-                <section class="settings-pane" data-pane="security" aria-labelledby="tab-security" hidden>
-                    <h2 class="card-heading" id="tab-security">Keselamatan &amp; CAPTCHA</h2>
-                    <p class="muted">
-                        Aktifkan CAPTCHA untuk halaman sensitif (log masuk, pendaftaran, lupa kata laluan, dan
-                        email blast). Sistem menggunakan math CAPTCHA terbina dalam. Konfigurasi AWS WAF
-                        disimpan untuk integrasi masa depan.
-                    </p>
-
-                    <div class="form-group form-check">
-                        <input type="checkbox" id="captcha_enabled" name="captcha_enabled" value="1"
-                               <?= !empty($systemConfig['captcha_enabled']) ? 'checked' : '' ?>>
-                        <label for="captcha_enabled">Aktifkan CAPTCHA pada halaman sensitif</label>
-                    </div>
-
-                    <h3 class="card-heading" style="font-size:0.95rem; margin-top: var(--space-5);">Per-halaman</h3>
-                    <div class="form-group form-grid form-grid-2">
-                        <label class="form-check">
-                            <input type="checkbox" name="captcha_on_login" value="1"
-                                   <?= !empty($systemConfig['captcha_on_login']) ? 'checked' : '' ?>>
-                            <span>Log masuk</span>
-                        </label>
-                        <label class="form-check">
-                            <input type="checkbox" name="captcha_on_register" value="1"
-                                   <?= !empty($systemConfig['captcha_on_register']) ? 'checked' : '' ?>>
-                            <span>Daftar akaun</span>
-                        </label>
-                        <label class="form-check">
-                            <input type="checkbox" name="captcha_on_forgot_password" value="1"
-                                   <?= !empty($systemConfig['captcha_on_forgot_password']) ? 'checked' : '' ?>>
-                            <span>Lupa kata laluan</span>
-                        </label>
-                        <label class="form-check">
-                            <input type="checkbox" name="captcha_on_reset_password" value="1"
-                                   <?= !empty($systemConfig['captcha_on_reset_password']) ? 'checked' : '' ?>>
-                            <span>Reset kata laluan</span>
-                        </label>
-                        <label class="form-check">
-                            <input type="checkbox" name="captcha_on_admin_blast" value="1"
-                                   <?= !empty($systemConfig['captcha_on_admin_blast']) ? 'checked' : '' ?>>
-                            <span>Email blast admin</span>
-                        </label>
-                    </div>
-
-                    <h3 class="card-heading" style="font-size:0.95rem; margin-top: var(--space-5);">AWS WAF / Captcha (Pilihan)</h3>
-                    <p class="muted" style="font-size:0.85rem;">
-                        Konfigurasi ini disimpan untuk integrasi AWS WAF Captcha masa depan.
-                        Math CAPTCHA kekal aktif selagi AWS WAF belum diaktifkan di sini.
-                    </p>
-                    <div class="form-group form-grid form-grid-2">
-                        <div>
-                            <label for="aws_waf_api_key" class="form-label">AWS WAF API Key</label>
-                            <input type="password" id="aws_waf_api_key" name="aws_waf_api_key"
-                                   value="<?= e((string) ($systemConfig['aws_waf_api_key'] ?? '')) ?>"
-                                   class="form-control" placeholder="AWS WAF API key" autocomplete="off">
-                        </div>
-                        <div>
-                            <label for="aws_waf_secret_key" class="form-label">AWS WAF Secret</label>
-                            <input type="password" id="aws_waf_secret_key" name="aws_waf_secret_key"
-                                   value="<?= e((string) ($systemConfig['aws_waf_secret_key'] ?? '')) ?>"
-                                   class="form-control" placeholder="AWS WAF Secret" autocomplete="off">
-                        </div>
-                        <div>
-                            <label for="aws_waf_captcha_api" class="form-label">Endpoint CAPTCHA API</label>
-                            <input type="text" id="aws_waf_captcha_api" name="aws_waf_captcha_api"
-                                   value="<?= e((string) ($systemConfig['aws_waf_captcha_api'] ?? 'https://captcha.dev.waf.amazonaws.com/')) ?>"
-                                   class="form-control" placeholder="https://captcha.dev.waf.amazonaws.com/">
-                        </div>
-                        <div>
-                            <label for="aws_waf_captcha_js" class="form-label">JS Integration Script</label>
-                            <input type="text" id="aws_waf_captcha_js" name="aws_waf_captcha_js"
-                                   value="<?= e((string) ($systemConfig['aws_waf_captcha_js'] ?? '')) ?>"
-                                   class="form-control" placeholder="https://...awswafcaptcha.js">
-                        </div>
-                    </div>
-                    <p class="muted" style="font-size:0.8rem; margin-top: var(--space-2);">
-                        <strong>Amaran:</strong> AWS WAF Captcha memerlukan integrasi klien JavaScript
-                        yang melepasi token CAPTCHA ke bahagian pelayan. Math CAPTCHA di atas adalah
-                        lalai yang aktif dan tidak memerlukan perkhidmatan luaran.
-                    </p>
-                </section>
-
-                <?= captcha_field('admin_settings') ?>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Simpan Semua Tetapan</button>
-                    <a href="<?= url('/admin') ?>" class="btn btn-ghost">Kembali ke Dashboard</a>
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; align-items: start;">
+        <!-- Main Form Column -->
+        <div class="card" style="padding: 1.75rem; background: var(--bg-surface, #fff);">
+            
+            <!-- TAB: Identity / QR -->
+            <section class="settings-pane is-active" data-pane="identity" aria-labelledby="tab-identity">
+                <div style="margin-bottom: 1.5rem;">
+                    <h2 class="card-heading" id="tab-identity" style="margin: 0; font-size: 1.25rem;">Identiti &amp; QR Pembayaran</h2>
+                    <p class="muted small" style="margin-top: 0.25rem;">Nama platform, tagline, logo dan QR rasmi akaun pengurusan.</p>
                 </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="app_name" class="form-label" style="font-weight: 600;">Nama Sistem</label>
+                    <input type="text" id="app_name" name="app_name" required maxlength="150" value="<?= e($appName) ?>" class="form-control" placeholder="cth: Sistem Pengurusan Main Kutu">
+                    <p class="form-help muted small">Maksimum 150 aksara. Dipaparkan di header, footer dan emel sistem.</p>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="brand_tagline" class="form-label" style="font-weight: 600;">Tagline Penjenamaan</label>
+                    <input type="text" id="brand_tagline" name="brand_tagline" maxlength="200" value="<?= e($tagline) ?>" class="form-control" placeholder="Tagline ringkas sistem">
+                    <p class="form-help muted small">Dipaparkan pada halaman utama dan penerangan sistem.</p>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="logo" class="form-label" style="font-weight: 600;">Muat Naik Logo Platform</label>
+                    <div style="display: flex; gap: 1.25rem; align-items: center; margin-top: 0.5rem; flex-wrap: wrap;">
+                        <div style="width: 80px; height: 80px; border-radius: 8px; border: 1px dashed var(--border, #cbd5e1); display: flex; align-items: center; justify-content: center; background: #f8fafc; overflow: hidden;">
+                            <?php if ($logoPath): ?>
+                                <img src="<?= url('/brand/logo') ?>" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                            <?php else: ?>
+                                <strong style="color: #64748b; font-size: 1.25rem;">MK</strong>
+                            <?php endif; ?>
+                        </div>
+                        <div style="flex: 1; min-width: 220px;">
+                            <input type="file" id="logo" name="logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" class="form-control">
+                            <p class="form-help muted small" style="margin-top: 0.25rem;">Format: PNG, JPG, SVG, WEBP. Maksimum 2 MB.</p>
+                            <?php if ($logoPath): ?>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" name="remove_logo" value="1">
+                                    <span class="small text-danger" style="color: #dc2626;">Padam logo semasa (guna logo lalai)</span>
+                                </label>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="payment_qr" class="form-label" style="font-weight: 600;">QR Pembayaran Utama (Sistem)</label>
+                    <p class="form-help muted small" style="margin-top: 0;">QR kod lalai untuk pembayaran ahli yang tiada kod QR khusus pada pelan.</p>
+                    <div style="display: flex; gap: 1.25rem; align-items: center; margin-top: 0.5rem; flex-wrap: wrap;">
+                        <div style="width: 100px; height: 100px; border-radius: 8px; border: 1px dashed var(--border, #cbd5e1); display: flex; align-items: center; justify-content: center; background: #f8fafc; overflow: hidden;">
+                            <?php if ($qrPath): ?>
+                                <img src="<?= url('/brand/qr') ?>" alt="QR" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                            <?php else: ?>
+                                <span class="muted small" style="text-align: center; font-size: 0.75rem;">Tiada QR</span>
+                            <?php endif; ?>
+                        </div>
+                        <div style="flex: 1; min-width: 220px;">
+                            <input type="file" id="payment_qr" name="payment_qr" accept="image/png,image/jpeg,image/svg+xml,image/webp" class="form-control">
+                            <p class="form-help muted small" style="margin-top: 0.25rem;">Format: PNG, JPG, SVG, WEBP. Maksimum 2 MB.</p>
+                            <?php if ($qrPath): ?>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" name="remove_qr" value="1">
+                                    <span class="small text-danger" style="color: #dc2626;">Padam QR sistem semasa</span>
+                                </label>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: Email blast -->
+            <section class="settings-pane" data-pane="blaster" aria-labelledby="tab-blaster" hidden>
+                <div style="margin-bottom: 1.5rem;">
+                    <h2 class="card-heading" id="tab-blaster" style="margin: 0; font-size: 1.25rem;">Konfigurasi Email Blast</h2>
+                    <p class="muted small" style="margin-top: 0.25rem;">Tetapan penghantaran emel pengumuman pukal kepada ahli dan pentadbir.</p>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                        <input type="checkbox" name="email_blast_enabled" value="1" <?= $emailBlastEnabled ? 'checked' : '' ?> style="width: 1.15rem; height: 1.15rem;">
+                        <div>
+                            <strong>Aktifkan Fungsi Email Blast</strong>
+                            <div class="muted small">Benarkan pentadbir menghantar emel siaran terus dari panel admin.</div>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="grid grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="email_blast_from_name" class="form-label" style="font-weight: 600;">Nama Pengirim</label>
+                        <input type="text" id="email_blast_from_name" name="email_blast_from_name" value="<?= e($emailBlastFromName) ?>" maxlength="100" class="form-control" placeholder="cth: Pengurusan Main Kutu">
+                    </div>
+                    <div>
+                        <label for="email_blast_from_email" class="form-label" style="font-weight: 600;">Emel Pengirim (From)</label>
+                        <input type="email" id="email_blast_from_email" name="email_blast_from_email" value="<?= e($emailBlastFromEmail) ?>" maxlength="150" class="form-control" placeholder="no-reply@sistemkutu.my">
+                    </div>
+                </div>
+
+                <div class="grid grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="email_blast_reply_to" class="form-label" style="font-weight: 600;">Reply-To (Pilihan)</label>
+                        <input type="email" id="email_blast_reply_to" name="email_blast_reply_to" value="<?= e($emailBlastReplyTo) ?>" maxlength="150" class="form-control" placeholder="sokongan@sistemkutu.my">
+                    </div>
+                    <div>
+                        <label for="email_blast_default_subject" class="form-label" style="font-weight: 600;">Subjek Lalai</label>
+                        <input type="text" id="email_blast_default_subject" name="email_blast_default_subject" value="<?= e($emailBlastDefaultSubject) ?>" maxlength="200" class="form-control" placeholder="Notis Rasmi Sistem Kutu">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="email_blast_footer" class="form-label" style="font-weight: 600;">Kaki Surat Emel (Footer)</label>
+                    <textarea id="email_blast_footer" name="email_blast_footer" rows="3" maxlength="800" class="form-control" placeholder="cth: Sekian, Terima Kasih&#10;Pasukan Pengurusan"><?= e($emailBlastFooter) ?></textarea>
+                </div>
+            </section>
+
+            <!-- TAB: wap.net (WhatsApp Gateway) -->
+            <section class="settings-pane" data-pane="wapnet" aria-labelledby="tab-wapnet" hidden>
+                <div style="margin-bottom: 1.5rem;">
+                    <h2 class="card-heading" id="tab-wapnet" style="margin: 0; font-size: 1.25rem;">Integrasi WhatsApp Gateway (wap.net)</h2>
+                    <p class="muted small" style="margin-top: 0.25rem;">Konfigurasi API wap.net untuk penghantaran mesej dan notifikasi giliran/bayaran WhatsApp automatik.</p>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem; background: #f0fdf4; padding: 1rem; border-radius: 8px; border: 1px solid #bbf7d0;">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                        <input type="checkbox" name="wapnet_enabled" value="1" <?= $wapnetEnabled ? 'checked' : '' ?> style="width: 1.15rem; height: 1.15rem;">
+                        <div>
+                            <strong>Aktifkan Integrasi wap.net</strong>
+                            <div class="muted small" style="color: #166534;">Benarkan sistem memanggil API wap.net untuk notifikasi terus ke WhatsApp pengguna.</div>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="grid grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="wapnet_api_url" class="form-label" style="font-weight: 600;">API Endpoint URL</label>
+                        <input type="url" id="wapnet_api_url" name="wapnet_api_url" value="<?= e($wapnetApiUrl) ?>" maxlength="255" class="form-control" placeholder="https://api.wap.net/v1/messages">
+                    </div>
+                    <div>
+                        <label for="wapnet_sender_id" class="form-label" style="font-weight: 600;">Sender / Instance ID</label>
+                        <input type="text" id="wapnet_sender_id" name="wapnet_sender_id" value="<?= e($wapnetSender) ?>" maxlength="100" class="form-control" placeholder="cth: 60123456789">
+                    </div>
+                </div>
+
+                <div class="grid grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="wapnet_api_key" class="form-label" style="font-weight: 600;">API Key / Secret Token</label>
+                        <input type="password" id="wapnet_api_key" name="wapnet_api_key" value="<?= e($wapnetApiKey) ?>" maxlength="255" class="form-control" placeholder="Token rahsia dari portal wap.net" autocomplete="off">
+                        <p class="form-help muted small">Token disulitkan dan dilindungi dengan selamat.</p>
+                    </div>
+                    <div>
+                        <label for="wapnet_default_template" class="form-label" style="font-weight: 600;">Kod Templat Lalai</label>
+                        <input type="text" id="wapnet_default_template" name="wapnet_default_template" value="<?= e($wapnetTemplate) ?>" maxlength="100" class="form-control" placeholder="general_notification">
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: Operations / contact -->
+            <section class="settings-pane" data-pane="operations" aria-labelledby="tab-operations" hidden>
+                <div style="margin-bottom: 1.5rem;">
+                    <h2 class="card-heading" id="tab-operations" style="margin: 0; font-size: 1.25rem;">Operasi &amp; Maklumat Hubungan</h2>
+                    <p class="muted small" style="margin-top: 0.25rem;">Maklumat perhubungan pentadbiran dan helpdesk untuk kemudahan ahli.</p>
+                </div>
+
+                <div class="grid grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="system_contact_phone" class="form-label" style="font-weight: 600;">Nombor Telefon Helpdesk</label>
+                        <input type="text" id="system_contact_phone" name="system_contact_phone" value="<?= e($contactPhone) ?>" maxlength="30" class="form-control" placeholder="03-XXXXXXXX atau 012-XXXXXXX">
+                    </div>
+                    <div>
+                        <label for="system_contact_email" class="form-label" style="font-weight: 600;">Emel Khidmat Pelanggan</label>
+                        <input type="email" id="system_contact_email" name="system_contact_email" value="<?= e($contactEmail) ?>" maxlength="150" class="form-control" placeholder="helpdesk@sistemkutu.my">
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: Security & CAPTCHA -->
+            <section class="settings-pane" data-pane="security" aria-labelledby="tab-security" hidden>
+                <div style="margin-bottom: 1.5rem;">
+                    <h2 class="card-heading" id="tab-security" style="margin: 0; font-size: 1.25rem;">Keselamatan &amp; Kawalan CAPTCHA</h2>
+                    <p class="muted small" style="margin-top: 0.25rem;">Perlindungan daripada serangan brute-force, bot dan pendaftaran spam.</p>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem; background: #fff7ed; padding: 1rem; border-radius: 8px; border: 1px solid #fed7aa;">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                        <input type="checkbox" id="captcha_enabled" name="captcha_enabled" value="1" <?= !empty($systemConfig['captcha_enabled']) ? 'checked' : '' ?> style="width: 1.15rem; height: 1.15rem;">
+                        <div>
+                            <strong>Aktifkan Sistem CAPTCHA Global</strong>
+                            <div class="muted small" style="color: #9a3412;">Menguatkuasakan verifikasi soalan matematik / bot pada halaman sensitif.</div>
+                        </div>
+                    </label>
+                </div>
+
+                <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;">Tetapan Perlindungan Per-Halaman</h3>
+                <div class="grid grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 8px;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="captcha_on_login" value="1" <?= !empty($systemConfig['captcha_on_login']) ? 'checked' : '' ?>>
+                        <span>Halaman Log Masuk</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="captcha_on_register" value="1" <?= !empty($systemConfig['captcha_on_register']) ? 'checked' : '' ?>>
+                        <span>Pendaftaran Akaun Ahli</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="captcha_on_forgot_password" value="1" <?= !empty($systemConfig['captcha_on_forgot_password']) ? 'checked' : '' ?>>
+                        <span>Lupa Kata Laluan</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="captcha_on_reset_password" value="1" <?= !empty($systemConfig['captcha_on_reset_password']) ? 'checked' : '' ?>>
+                        <span>Penetapan Semula Kata Laluan</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="captcha_on_admin_blast" value="1" <?= !empty($systemConfig['captcha_on_admin_blast']) ? 'checked' : '' ?>>
+                        <span>Borang Email Blast Admin</span>
+                    </label>
+                </div>
+
+                <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem;">Konfigurasi AWS WAF CAPTCHA (Pilihan Tambahan)</h3>
+                <p class="muted small" style="margin-bottom: 1rem;">Diperlukan hanya jika menggunakan integrasi AWS WAF Web ACL.</p>
+
+                <div class="grid grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="aws_waf_api_key" class="form-label" style="font-weight: 600;">AWS WAF API Key</label>
+                        <input type="password" id="aws_waf_api_key" name="aws_waf_api_key" value="<?= e((string) ($systemConfig['aws_waf_api_key'] ?? '')) ?>" class="form-control" placeholder="API key AWS WAF" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="aws_waf_secret_key" class="form-label" style="font-weight: 600;">AWS WAF Secret Key</label>
+                        <input type="password" id="aws_waf_secret_key" name="aws_waf_secret_key" value="<?= e((string) ($systemConfig['aws_waf_secret_key'] ?? '')) ?>" class="form-control" placeholder="Secret Key" autocomplete="off">
+                    </div>
+                </div>
+            </section>
+
+            <?= captcha_field('admin_settings') ?>
+
+            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <a href="<?= url('/admin') ?>" class="btn btn-secondary">Batal / Kembali</a>
+                <button type="submit" class="btn btn-primary" style="min-width: 160px;">Simpan Semua Tetapan</button>
             </div>
+
         </div>
 
-        <aside class="card settings-preview">
-            <div class="card-body">
-                <h2 class="card-heading">Pratonton</h2>
-                <p class="muted">Paparan bagaimana identiti anda akan kelihatan.</p>
-                <div class="brand-preview">
-                    <div class="brand-preview-mark">
+        <!-- Sidebar Preview Column -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div class="card" style="padding: 1.5rem; background: var(--bg-surface, #fff);">
+                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; font-weight: 600;">Pratonton Jenama</h3>
+                <p class="muted small" style="margin-bottom: 1rem;">Paparan identiti semasa pada sistem.</p>
+                
+                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div style="width: 48px; height: 48px; border-radius: 6px; background: #fff; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; overflow: hidden;">
                         <?php if ($logoPath): ?>
-                            <img src="<?= url('/brand/logo') ?>" alt="">
+                            <img src="<?= url('/brand/logo') ?>" alt="" style="max-width: 100%; max-height: 100%;">
                         <?php else: ?>
-                            <span aria-hidden="true">MK</span>
+                            <strong style="color: var(--primary, #2563eb);">MK</strong>
                         <?php endif; ?>
                     </div>
-                    <div class="brand-preview-text">
-                        <strong><?= e($appName) ?></strong>
-                        <?php if ($tagline !== ''): ?>
-                            <small><?= e($tagline) ?></small>
+                    <div>
+                        <div style="font-weight: 700; color: #1e293b;"><?= e($appName) ?></div>
+                        <?php if ($tagline): ?>
+                            <div class="muted small"><?= e($tagline) ?></div>
                         <?php endif; ?>
                     </div>
                 </div>
 
                 <?php if ($qrPath): ?>
-                    <div class="qr-public" style="margin-top: var(--space-4);">
-                        <img src="<?= url('/brand/qr') ?>" alt="QR pembayaran">
-                        <div class="qr-public-text">
-                            <h4>QR Pembayaran Sistem</h4>
-                            <p>Dipaparkan sebagai sandaran untuk pelan tanpa QR khusus.</p>
-                        </div>
+                    <div style="margin-top: 1rem; text-align: center; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <img src="<?= url('/brand/qr') ?>" alt="QR Sistem" style="max-width: 140px; border-radius: 6px;">
+                        <div class="muted small" style="margin-top: 0.5rem; font-weight: 600;">QR Pembayaran Sistem</div>
                     </div>
                 <?php endif; ?>
-
-                <hr style="border:0;border-top:1px solid var(--color-border);margin: var(--space-5) 0;">
-
-                <h3 class="card-heading" style="font-size:1rem;">Status Integrasi</h3>
-                <ul class="integration-status">
-                    <li><span>Email Blast</span><span class="badge badge-<?= $emailBlastEnabled ? 'success' : 'neutral' ?>"><?= $emailBlastEnabled ? 'Aktif' : 'Tidak aktif' ?></span></li>
-                    <li><span>wap.net (WhatsApp)</span><span class="badge badge-<?= $wapnetEnabled ? 'success' : 'neutral' ?>"><?= $wapnetEnabled ? 'Aktif' : 'Tidak aktif' ?></span></li>
-                    <li><span>Logo</span><span class="badge badge-<?= $logoPath ? 'success' : 'neutral' ?>"><?= $logoPath ? 'Ditetapkan' : 'Tiada' ?></span></li>
-                    <li><span>QR Sistem</span><span class="badge badge-<?= $qrPath ? 'success' : 'neutral' ?>"><?= $qrPath ? 'Ditetapkan' : 'Tiada' ?></span></li>
-                </ul>
             </div>
-        </aside>
+
+            <div class="card" style="padding: 1.5rem; background: var(--bg-surface, #fff);">
+                <h3 style="margin: 0 0 0.75rem 0; font-size: 1.1rem; font-weight: 600;">Ringkasan Status Integrasi</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="small">Email Blaster:</span>
+                        <span class="badge badge-<?= $emailBlastEnabled ? 'success' : 'neutral' ?>"><?= $emailBlastEnabled ? 'Aktif' : 'Mati' ?></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="small">wap.net (WhatsApp):</span>
+                        <span class="badge badge-<?= $wapnetEnabled ? 'success' : 'neutral' ?>"><?= $wapnetEnabled ? 'Aktif' : 'Mati' ?></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="small">Perlindungan Bot:</span>
+                        <span class="badge badge-<?= !empty($systemConfig['captcha_enabled']) ? 'success' : 'neutral' ?>"><?= !empty($systemConfig['captcha_enabled']) ? 'Aktif' : 'Standard' ?></span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </form>
 
-<!-- Email blast composer / history (separate form) -->
-<section class="card blast-composer" aria-labelledby="blast-heading">
-    <div class="card-body">
-        <div class="card-heading">
-            <div>
-                <span class="section-kicker">Komunikasi</span>
-                <h2 id="blast-heading" class="card-title">Hantar Email Blast</h2>
-                <p class="muted">Hantar emel sekarang kepada pengguna sasaran. Log penuh dipaparkan di bawah.</p>
-            </div>
+<!-- Email Blast Composer & History Section -->
+<div class="card" style="margin-top: 2.5rem; padding: 1.75rem; background: var(--bg-surface, #fff);">
+    <div style="margin-bottom: 1.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 1rem;">
+        <span class="page-eyebrow" style="color: var(--primary, #2563eb);">Pusat Komunikasi</span>
+        <h2 style="margin: 0.25rem 0 0; font-size: 1.35rem;">Hantar Email Blast Segera</h2>
+        <p class="muted small" style="margin-top: 0.25rem;">Hantar notis atau pengumuman rasmi terus ke peti masuk emel pengguna.</p>
+    </div>
+
+    <?php if (!$emailBlastEnabled): ?>
+        <div class="alert alert-warning" style="margin-bottom: 1.5rem;">
+            Email blast belum diaktifkan. Sila tandakan <strong>Aktifkan Fungsi Email Blast</strong> di Tab 2 di atas dan klik Simpan.
+        </div>
+    <?php endif; ?>
+
+    <form method="POST" action="<?= url('/admin/settings/blast') ?>" novalidate>
+        <?= csrf_field() ?>
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label for="blast_subject" class="form-label" style="font-weight: 600;">Tajuk / Subjek Emel</label>
+            <input type="text" id="blast_subject" name="subject" required maxlength="200" value="<?= e($emailBlastDefaultSubject) ?>" class="form-control" placeholder="Subjek emel pengumuman">
+        </div>
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label for="blast_message" class="form-label" style="font-weight: 600;">Kandungan Mesej</label>
+            <textarea id="blast_message" name="message" required rows="5" maxlength="4000" class="form-control" placeholder="Tulis pengumuman lengkap anda di sini..."></textarea>
         </div>
 
-        <?php if (!$emailBlastEnabled): ?>
-            <div class="alert alert-info" role="status">
-                Email blast belum diaktifkan. Aktifkan <strong>Email Blast</strong> dalam tab di atas, simpan, kemudian kembali untuk menghantar.
-            </div>
-        <?php endif; ?>
+        <?= captcha_field('admin_blast') ?>
 
-        <form method="POST" action="<?= url('/admin/settings/blast') ?>" class="form-grid" novalidate>
-            <?= csrf_field() ?>
-            <div class="form-group">
-                <label for="blast_subject" class="form-label">Subjek</label>
-                <input type="text" id="blast_subject" name="subject" required maxlength="200"
-                       value="<?= e($emailBlastDefaultSubject) ?>" class="form-control">
+        <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 240px;">
+                <label for="blast_target" class="form-label" style="font-weight: 600;">Kumpulan Sasaran Penerima</label>
+                <select id="blast_target" name="target_role" class="form-control">
+                    <option value="all">Semua Pengguna (Ahli &amp; Pentadbir)</option>
+                    <option value="member">Ahli Kutu Sahaja</option>
+                    <option value="admin">Semua Pentadbir (Admin &amp; Staff)</option>
+                    <option value="super_admin">Super Admin Sahaja</option>
+                </select>
             </div>
-            <div class="form-group">
-                <label for="blast_message" class="form-label">Mesej</label>
-                <textarea id="blast_message" name="message" required rows="6" maxlength="4000"
-                          class="form-control"
-                          placeholder="Tulis mesej anda di sini..."></textarea>
-            </div>
+            <button type="submit" class="btn btn-primary" <?= $emailBlastEnabled ? '' : 'disabled' ?> style="min-width: 160px; height: 42px;">
+                Hantar Sekarang &rarr;
+            </button>
+        </div>
+    </form>
 
-            <?= captcha_field('admin_blast') ?>
-            <div class="form-group form-grid form-grid-2">
-                <div>
-                    <label for="blast_target" class="form-label">Sasaran</label>
-                    <select id="blast_target" name="target_role" class="form-control">
-                        <option value="all">Semua pengguna</option>
-                        <option value="member">Hanya ahli</option>
-                        <option value="admin">Pentadbir sahaja</option>
-                        <option value="super_admin">Super Admin sahaja</option>
-                        <option value="staff">Staf sahaja</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label">&nbsp;</label>
-                    <button type="submit" class="btn btn-primary" <?= $emailBlastEnabled ? '' : 'disabled' ?>>
-                        Hantar Blast
-                    </button>
-                </div>
-            </div>
-        </form>
-
-        <?php if (($blastCount ?? 0) > 0): ?>
-            <h3 class="card-heading" style="font-size:1rem;margin-top:var(--space-5);">Log Blast Terkini</h3>
+    <?php if (($blastCount ?? 0) > 0): ?>
+        <div style="margin-top: 2rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem;">Log Penghantaran Email Blast</h3>
             <div class="table-wrap">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Tarikh</th>
+                            <th>Tarikh &amp; Masa</th>
                             <th>Subjek</th>
                             <th>Sasaran</th>
                             <th>Penerima</th>
                             <th>Status</th>
-                            <th>Oleh</th>
+                            <th>Dihantar Oleh</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($blasts as $b): ?>
                             <tr>
                                 <td><?= e($b['sent_at'] ?: $b['created_at']) ?></td>
-                                <td><?= e(mb_strimwidth($b['subject'], 0, 60, '…')) ?></td>
+                                <td><strong><?= e(mb_strimwidth($b['subject'], 0, 60, '…')) ?></strong></td>
                                 <td><span class="badge badge-neutral"><?= e($b['target_role']) ?></span></td>
-                                <td><?= e((string) $b['recipient_count']) ?></td>
+                                <td><?= e((string) $b['recipient_count']) ?> orang</td>
                                 <td><span class="badge badge-<?= $statusTone($b['status']) ?>"><?= e(ucfirst($b['status'])) ?></span></td>
                                 <td><?= e($b['creator_name'] ?? ('#' . $b['created_by'])) ?></td>
                             </tr>
@@ -474,8 +462,6 @@ $statusTone = static function (string $s): string {
                     </tbody>
                 </table>
             </div>
-        <?php else: ?>
-            <p class="muted" style="margin-top:var(--space-4);">Belum ada blast dihantar.</p>
-        <?php endif; ?>
-    </div>
-</section>
+        </div>
+    <?php endif; ?>
+</div>

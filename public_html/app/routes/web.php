@@ -46,7 +46,9 @@ $container->bind(AuthController::class,      fn () => new AuthController(
     $container->make(UserRepository::class)
 ));
 $container->bind(DashboardController::class, fn () => new DashboardController(
-    $container->make(AuthService::class)
+    $container->make(AuthService::class),
+    new \App\Repositories\MemberRepository(),
+    new \App\Services\CreditScoreService(new \App\Repositories\CreditScoreRepository())
 ));
 
 $router = new Router($container);

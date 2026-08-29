@@ -133,7 +133,7 @@ final class PlanService
         $members = $this->planMembers->allForPlan($planId, 'active');
         $count = 0;
 
-        foreach ($members as $member) {
+        foreach ($members as $memberIndex => $member) {
             for ($cycle = 1; $cycle <= $plan->numberOfCycles; $cycle++) {
                 $dueDate = $this->addInterval(new DateTimeImmutable($plan->startDate), $interval, $cycle - 1)->format('Y-m-d');
 
@@ -147,6 +147,57 @@ final class PlanService
                     'status'        => 'pending',
                 ]);
                 $count++;
+            }
+        }
+
+        // Also generate/ensure Payout Schedules for the cycles
+        $pdo = Database::connection();
+        $memberCount = count($members);
+        if ($memberCount > 0) {
+            $today = (new DateTimeImmutable())->format('Y-m-d');
+            for ($cycle = 1; $cycle <= $plan->numberOfCycles; $cycle++) {
+                $recipient = $members[($cycle - 1) % $memberCount];
+                $payoutDate = $this->addInterval(new DateTimeImmutable($plan->startDate), $interval, $cycle - 1)->format('Y-m-d');
+                $expectedAmount = $plan->payoutMode === 'fixed' && (float)$plan->fixedPayoutAmount > 0 
+                    ? $plan->fixedPayoutAmount 
+                    : bcmul($plan->contributionAmount, (string)$memberCount, 2);
+
+                // Auto determine status by date
+                $cycleStatus = ($payoutDate < $today) ? 'paid' : (($payoutDate === $today) ? 'due' : 'scheduled');
+
+                $check = $pdo->prepare('SELECT id, status FROM payout_schedules WHERE plan_id = :p AND plan_cycle_id = :c LIMIT 1');
+                $check->execute([':p' => $planId, ':c' => $cycleIds[$cycle] ?? 0]);
+                $existingPayout = $check->fetch(PDO::FETCH_ASSOC);
+
+                if (!$existingPayout) {
+                    $insertPayout = $pdo->prepare(
+                        'INSERT INTO payout_schedules (plan_id, plan_cycle_id, recipient_member_id, payout_date, expected_amount, status)
+                         VALUES (:plan_id, :plan_cycle_id, :recipient_member_id, :payout_date, :expected_amount, :status)'
+                    );
+                    $insertPayout->execute([
+                        ':plan_id'             => $planId,
+                        ':plan_cycle_id'       => $cycleIds[$cycle] ?? null,
+                        ':recipient_member_id' => $recipient->memberId,
+                        ':payout_date'        => $payoutDate,
+                        ':expected_amount'    => $expectedAmount,
+                        ':status'             => $cycleStatus,
+                    ]);
+                } else {
+                    // Update recipient and payout date if not yet paid
+                    if (($existingPayout['status'] ?? '') !== 'paid') {
+                        $updatePayout = $pdo->prepare(
+                            'UPDATE payout_schedules 
+                             SET recipient_member_id = :recipient_member_id, payout_date = :payout_date, expected_amount = :expected_amount
+                             WHERE id = :id'
+                        );
+                        $updatePayout->execute([
+                            ':recipient_member_id' => $recipient->memberId,
+                            ':payout_date'        => $payoutDate,
+                            ':expected_amount'    => $expectedAmount,
+                            ':id'                 => $existingPayout['id'],
+                        ]);
+                    }
+                }
             }
         }
 

@@ -8,6 +8,7 @@ use App\Core\Controller;
 use App\Repositories\MemberRepository;
 use App\Repositories\PaymentBatchRepository;
 use App\Repositories\PaymentRepository;
+use App\Repositories\PaymentSlipRepository;
 use App\Services\AuthService;
 use App\Services\PaymentVerificationService;
 
@@ -19,18 +20,27 @@ final class VerificationController extends Controller
         private PaymentBatchRepository $batches,
         private PaymentRepository $payments,
         private MemberRepository $members,
+        private PaymentSlipRepository $slips,
     ) {}
 
-    /** Admin: queue of batches pending verification. */
+    /** Admin: list of payment batches with status filter and search. */
     public function queue(): void
     {
         $search = trim((string) ($_GET['search'] ?? ''));
-        $queue = $this->verification->pendingQueue($search !== '' ? $search : null);
+        $status = trim((string) ($_GET['status'] ?? ''));
+        
+        $batches = $this->batches->allWithDetails(
+            $status !== '' ? $status : null,
+            $search !== '' ? $search : null
+        );
+        $stats = $this->batches->statsSummary();
 
         $this->view('verification/queue', [
-            'title' => 'Sahkan Bayaran',
-            'queue'  => $queue,
-            'search' => $search,
+            'title'   => 'Pengurusan Bayaran & Pengesahan',
+            'batches' => $batches,
+            'stats'   => $stats,
+            'search'  => $search,
+            'status'  => $status,
         ]);
     }
 
@@ -45,12 +55,14 @@ final class VerificationController extends Controller
 
         $items = $this->payments->allForBatch($batchId);
         $member = $this->members->findById($batch->memberId);
+        $slip = $batch->paymentSlipId !== null ? $this->slips->findById($batch->paymentSlipId) : null;
 
         $this->view('verification/show', [
             'title'  => 'Kumpulan ' . e($batch->batchNo),
             'batch'  => $batch,
             'items'  => $items,
             'member' => $member,
+            'slip'   => $slip,
         ]);
     }
 

@@ -8,6 +8,15 @@ Format mengikut Keep a Changelog.
 
 ## [Unreleased]
 
+### Fixed & Improved - UI/UX Refinements
+- **Avatar Dropdown Indicator**: Ditambah ikon panah ke bawah (chevron dropdown icon) di sebelah avatar pengguna dalam topbar header ([main.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/layouts/main.php)).
+- **Kad KPI `/admin/payouts`**: Kad statistik disusun dengan tinggi dan lebar seragam serta reka bentuk responsif grid dengan sempadan warna status (`primary`, `success`, `warning`, `danger`) ([admin_index.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/payouts/admin_index.php)).
+- **Redesign Tetapan Sistem `/admin/settings`**: Tata letak diperbaharui dengan 4 kad status integrasi, navigasi tab moden, pratonton logo/QR yang lebih kemas, susun atur borang 2-kolum responsif, dan seksyen Email Blast yang teratur ([settings.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/admin/settings.php)).
+
+### Added - Jana Jadual Direct Link & Viewable Schedule Table
+- `PlanService::generateSchedules` menjana jadual kitaran (`plan_cycles`), jadual caruman (`contribution_schedules`), dan giliran penerima payout (`payout_schedules`) automatik mengikut giliran dan tarikh kitaran.
+- Paparan jadual kitaran di [show.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/plans/show.php) memaparkan tarikh bayaran payout, nama penerima giliran kutu, jumlah payout, dan status berwarna (Hijau: Selesai Dibayar, Kuning: Perlu Dibayar, Biru: Berjadual/Akan Datang).
+
 ### Changed - Sidebar Skor Kredit Menu Position
 - Menu **Skor Kredit** kini diletakkan terus di bawah **Dashboard** (pentadbir di `/admin/credit-scores`) dan **Papan Pemuka** (ahli di `/credit-score`) dalam kumpulan menu pertama sidebar, bukan lagi di bahagian bawah atau dalam kumpulan Akaun.
 

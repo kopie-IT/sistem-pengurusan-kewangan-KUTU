@@ -56,12 +56,14 @@ $userInitials   = user_initials($currentUser);
                                         aria-haspopup="menu"
                                         aria-expanded="false"
                                         aria-controls="userMenu"
-                                        aria-label="Menu akaun: <?= e($currentUser) ?>">
+                                        aria-label="Menu akaun: <?= e($currentUser) ?>"
+                                        style="display: flex; align-items: center; gap: 0.35rem; padding-right: 0.35rem;">
                                     <?php if ($userAvatarUrl !== null): ?>
                                         <img src="<?= e($userAvatarUrl) ?>" alt="" class="user-avatar-img" loading="lazy">
                                     <?php else: ?>
                                         <span class="user-avatar-bubble" aria-hidden="true"><?= e($userInitials) ?></span>
                                     <?php endif; ?>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="opacity: 0.7; transition: transform 0.2s ease;"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                 </button>
                                 <div class="user-dropdown" id="userMenu" role="menu" aria-labelledby="userMenuToggle" hidden>
                                     <div class="user-dropdown-header">

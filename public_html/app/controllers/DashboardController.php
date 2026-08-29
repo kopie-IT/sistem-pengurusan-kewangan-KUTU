@@ -9,11 +9,19 @@ use App\Services\AuthService;
 
 final class DashboardController extends Controller
 {
+    private AuthService $auth;
+    private ?\App\Repositories\MemberRepository $members;
+    private ?\App\Services\CreditScoreService $credit;
+
     public function __construct(
-        private AuthService $auth,
-        private \App\Repositories\MemberRepository $members,
-        private \App\Services\CreditScoreService $credit,
-    ) {}
+        AuthService $auth,
+        ?\App\Repositories\MemberRepository $members = null,
+        ?\App\Services\CreditScoreService $credit = null,
+    ) {
+        $this->auth = $auth;
+        $this->members = $members ?? new \App\Repositories\MemberRepository();
+        $this->credit = $credit ?? new \App\Services\CreditScoreService(new \App\Repositories\CreditScoreRepository());
+    }
 
     public function index(): void
     {

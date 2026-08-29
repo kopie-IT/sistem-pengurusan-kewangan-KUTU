@@ -128,6 +128,12 @@ final class AuthService
         return !empty($_SESSION['user_id']);
     }
 
+    public function isAdmin(): bool
+    {
+        $role = $_SESSION['user_role'] ?? '';
+        return in_array($role, ['admin', 'super_admin', 'staff'], true);
+    }
+
     public function currentUser(): ?User
     {
         if (!$this->isAuthenticated()) {

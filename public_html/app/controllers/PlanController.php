@@ -61,11 +61,49 @@ final class PlanController extends Controller
             }
         }
 
+        // Fetch generated schedules & cycles for this plan so all members and admins can view
+        $pdo = \App\Core\Database::connection();
+        $cyclesStmt = $pdo->prepare('
+            SELECT pc.*, 
+                   ps.id AS payout_schedule_id,
+                   ps.recipient_member_id,
+                   ps.payout_date,
+                   ps.expected_amount AS payout_amount,
+                   ps.status AS payout_status,
+                   u.name AS recipient_name,
+                   m.member_code AS recipient_code
+            FROM plan_cycles pc
+            LEFT JOIN payout_schedules ps ON ps.plan_cycle_id = pc.id
+            LEFT JOIN members m ON m.id = ps.recipient_member_id
+            LEFT JOIN users u ON u.id = m.user_id
+            WHERE pc.plan_id = :plan_id
+            ORDER BY pc.cycle_no ASC
+        ');
+        $cyclesStmt->execute([':plan_id' => $id]);
+        $cycles = $cyclesStmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Fetch contribution schedules for current member if logged in
+        $mySchedules = [];
+        if ($member !== null) {
+            $schedStmt = $pdo->prepare('
+                SELECT cs.*, pc.cycle_no
+                FROM contribution_schedules cs
+                LEFT JOIN plan_cycles pc ON pc.id = cs.plan_cycle_id
+                WHERE cs.plan_id = :plan_id AND cs.member_id = :member_id
+                ORDER BY cs.due_date ASC
+            ');
+            $schedStmt->execute([':plan_id' => $id, ':member_id' => $member->id]);
+            $mySchedules = $schedStmt->fetchAll(\PDO::FETCH_ASSOC);
+        }
+
         $this->view('plans/show', [
             'title'         => e($plan->name),
             'plan'          => $plan,
             'alreadyMember' => $membership !== null,
             'memberStatus'  => $membership?->status ?? null,
+            'cycles'        => $cycles,
+            'mySchedules'   => $mySchedules,
+            'isAdmin'       => $this->isAdmin(),
         ]);
     }
 
@@ -309,7 +347,8 @@ final class PlanController extends Controller
             $this->redirect('/admin/plans');
         }
 
-        set_flash('success', 'Jadual caruman berjaya dijana (' . ($result['count'] ?? 0) . ' rekod).');
+        $scheduleUrl = url('/plans/' . $id . '#jadual');
+        set_flash('success', 'Jadual berjaya dijana (' . ($result['count'] ?? 0) . ' rekod caruman & giliran payout). <a href="' . $scheduleUrl . '" style="text-decoration:underline; font-weight:600; color:inherit;">Klik sini untuk lihat Jadual yang dijana &rarr;</a>');
         $this->redirect('/admin/plans');
     }
 

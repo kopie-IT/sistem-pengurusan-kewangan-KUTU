@@ -50,6 +50,70 @@ final class PaymentBatchRepository
         return array_map([$this, 'hydrate'], $stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
+    /**
+     * Fetch payment batches with member & slip details for admin listing.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function allWithDetails(?string $status = null, ?string $search = null): array
+    {
+        $params = [];
+        $where = [];
+
+        if ($status !== null && $status !== '' && $status !== 'all') {
+            $where[] = 'pb.status = :status';
+            $params[':status'] = $status;
+        }
+        if ($search !== null && $search !== '') {
+            $where[] = '(pb.batch_no LIKE :search OR u.name LIKE :search OR u.email LIKE :search OR m.member_code LIKE :search OR pb.note LIKE :search)';
+            $params[':search'] = '%' . $search . '%';
+        }
+
+        $whereClause = $where !== [] ? 'WHERE ' . implode(' AND ', $where) : '';
+        $sql = "SELECT pb.*,
+                       u.name AS member_name,
+                       u.email AS member_email,
+                       m.member_code,
+                       m.phone AS member_phone,
+                       ps.stored_name AS slip_file_name,
+                       ps.original_name AS slip_original_name
+                FROM payment_batches pb
+                LEFT JOIN members m ON m.id = pb.member_id
+                LEFT JOIN users u ON u.id = m.user_id
+                LEFT JOIN payment_slips ps ON ps.id = pb.payment_slip_id
+                {$whereClause}
+                ORDER BY pb.id DESC";
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Quick KPI counts and sums for payment batches.
+     *
+     * @return array<string, mixed>
+     */
+    public function statsSummary(): array
+    {
+        $sql = "SELECT
+                    COUNT(*) AS total_count,
+                    COALESCE(SUM(CASE WHEN status IN ('pending_verification', 'submitted', 'pending') THEN 1 ELSE 0 END), 0) AS pending_count,
+                    COALESCE(SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END), 0) AS approved_count,
+                    COALESCE(SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END), 0) AS rejected_count,
+                    COALESCE(SUM(CASE WHEN status = 'approved' THEN total_amount ELSE 0 END), 0) AS approved_amount,
+                    COALESCE(SUM(CASE WHEN status IN ('pending_verification', 'submitted', 'pending') THEN total_amount ELSE 0 END), 0) AS pending_amount
+                FROM payment_batches";
+        $stmt = Database::connection()->query($sql);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: [
+            'total_count' => 0,
+            'pending_count' => 0,
+            'approved_count' => 0,
+            'rejected_count' => 0,
+            'approved_amount' => 0,
+            'pending_amount' => 0,
+        ];
+    }
+
     public function create(array $data): int
     {
         $sql = 'INSERT INTO payment_batches (

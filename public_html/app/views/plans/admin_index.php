@@ -54,10 +54,11 @@
                                 <td><span class="badge badge-<?= $plan->status === 'active' ? 'success' : 'neutral' ?>"><?= e(ucfirst($plan->status)) ?></span></td>
                                 <td class="wrap">
                                     <a href="<?= url('/plans/' . $plan->id) ?>" class="btn btn-secondary btn-sm">Lihat</a>
+                                    <a href="<?= url('/plans/' . $plan->id . '#jadual') ?>" class="btn btn-ghost btn-sm">Lihat Jadual</a>
                                     <a href="<?= url('/admin/plans/' . $plan->id . '/edit') ?>" class="btn btn-ghost btn-sm">Edit</a>
                                     <form method="POST" action="<?= url('/admin/plans/' . $plan->id . '/generate') ?>" style="display:inline;">
                                         <?= csrf_field() ?>
-                                        <button type="submit" class="btn btn-ghost btn-sm">Jana Jadual</button>
+                                        <button type="submit" class="btn btn-primary btn-sm">Jana Jadual</button>
                                     </form>
                                 </td>
                             </tr>

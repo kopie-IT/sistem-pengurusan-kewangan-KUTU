@@ -1,54 +1,151 @@
 <?php
 /** @var array $batches */
-$statusBadge = function (?string $st): string {
+/** @var array $stats */
+/** @var string|null $status */
+/** @var string|null $search */
+
+$statusBadge = function (?string $st): array {
     return match ($st ?? '') {
-        'approved' => 'success',
-        'rejected' => 'danger',
-        'resubmit' => 'warning',
-        'pending'  => 'warning',
-        default => 'neutral',
+        'approved' => ['class' => 'badge-success', 'label' => 'Diluluskan'],
+        'rejected' => ['class' => 'badge-danger', 'label' => 'Ditolak'],
+        'resubmit', 'resubmission_requested' => ['class' => 'badge-warning', 'label' => 'Hantar Semula'],
+        'pending_verification', 'submitted', 'pending' => ['class' => 'badge-warning', 'label' => 'Menunggu Pengesahan'],
+        default => ['class' => 'badge-neutral', 'label' => ucfirst($st ?? 'menunggu')],
     };
 };
 ?>
 <?= flash_messages() ?>
 
-        <div class="page-header">
-            <div>
-                <span class="page-eyebrow">Pentadbiran</span>
-                <h1>Baris Giliran Pengesahan</h1>
-                <p class="muted">Kumpulan bayaran menunggu pengesahan.</p>
-            </div>
-        </div>
+<div class="page-header">
+    <div>
+        <span class="page-eyebrow">Pengurusan Kewangan</span>
+        <h1>Pengurusan Bayaran &amp; Pengesahan</h1>
+        <p class="muted">Semua transaksi bayaran ahli, slip resit dan pengesahan caruman.</p>
+    </div>
+</div>
 
-        <div class="table-wrap">
-            <table class="table">
-                <thead>
+<!-- KPI Summary Cards -->
+<div class="grid grid-4" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+    <div class="card" style="padding: 1.25rem; border-left: 4px solid var(--primary, #3b82f6); background: var(--bg-surface, #fff);">
+        <span class="muted small" style="display: block; font-weight: 500; margin-bottom: 0.25rem;">Jumlah Transaksi</span>
+        <h2 style="margin: 0; font-size: 1.75rem; font-weight: 700; color: #1e293b;"><?= number_format((int) ($stats['total_count'] ?? count($batches))) ?></h2>
+        <span class="muted small" style="display: block; margin-top: 0.25rem;">Keseluruhan bayaran</span>
+    </div>
+    <div class="card" style="padding: 1.25rem; border-left: 4px solid var(--warning, #f59e0b); background: var(--bg-surface, #fff);">
+        <span class="muted small" style="display: block; font-weight: 500; margin-bottom: 0.25rem;">Menunggu Pengesahan</span>
+        <h2 style="margin: 0; font-size: 1.75rem; font-weight: 700; color: #d97706;"><?= number_format((int) ($stats['pending_count'] ?? 0)) ?></h2>
+        <span class="muted small" style="display: block; margin-top: 0.25rem;"><?= format_money($stats['pending_amount'] ?? 0) ?> perlu disemak</span>
+    </div>
+    <div class="card" style="padding: 1.25rem; border-left: 4px solid var(--success, #10b981); background: var(--bg-surface, #fff);">
+        <span class="muted small" style="display: block; font-weight: 500; margin-bottom: 0.25rem;">Diluluskan</span>
+        <h2 style="margin: 0; font-size: 1.75rem; font-weight: 700; color: #16a34a;"><?= number_format((int) ($stats['approved_count'] ?? 0)) ?></h2>
+        <span class="muted small" style="display: block; margin-top: 0.25rem;"><?= format_money($stats['approved_amount'] ?? 0) ?> selesai</span>
+    </div>
+    <div class="card" style="padding: 1.25rem; border-left: 4px solid var(--danger, #ef4444); background: var(--bg-surface, #fff);">
+        <span class="muted small" style="display: block; font-weight: 500; margin-bottom: 0.25rem;">Ditolak</span>
+        <h2 style="margin: 0; font-size: 1.75rem; font-weight: 700; color: #dc2626;"><?= number_format((int) ($stats['rejected_count'] ?? 0)) ?></h2>
+        <span class="muted small" style="display: block; margin-top: 0.25rem;">Perlu tindakan</span>
+    </div>
+</div>
+
+<!-- Filter Toolbar -->
+<form method="GET" action="<?= url('/admin/payments') ?>" class="toolbar mb-4">
+    <div class="form-group" style="margin-bottom: 0; min-width: 260px; flex: 1;">
+        <input type="text" name="search" class="form-control" placeholder="Cari no kumpulan, nama ahli, emel atau kod ahli..." value="<?= e($search ?? '') ?>">
+    </div>
+    <div class="form-group" style="margin-bottom: 0; min-width: 200px;">
+        <select name="status" class="form-control" onchange="this.form.submit()">
+            <option value="">Semua Status</option>
+            <option value="pending_verification" <?= ($status ?? '') === 'pending_verification' ? 'selected' : '' ?>>Menunggu Pengesahan</option>
+            <option value="approved" <?= ($status ?? '') === 'approved' ? 'selected' : '' ?>>Diluluskan</option>
+            <option value="rejected" <?= ($status ?? '') === 'rejected' ? 'selected' : '' ?>>Ditolak</option>
+            <option value="resubmit" <?= ($status ?? '') === 'resubmit' ? 'selected' : '' ?>>Hantar Semula</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-secondary">Tapis</button>
+    <?php if (!empty($search) || !empty($status)): ?>
+        <a href="<?= url('/admin/payments') ?>" class="btn btn-ghost">Reset</a>
+    <?php endif; ?>
+</form>
+
+<div class="table-wrap">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Kumpulan &amp; Ahli</th>
+                <th>Jumlah Bayaran</th>
+                <th>Slip Bayaran</th>
+                <th>Tarikh Dihantar</th>
+                <th>Status</th>
+                <th class="wrap">Tindakan</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (empty($batches)): ?>
+                <tr>
+                    <td colspan="6" class="empty-state" style="text-align:center; padding: 2.5rem 1rem;">
+                        <p style="margin: 0 0 0.5rem 0; font-size: 1.1rem; font-weight: 600;">Tiada transaksi bayaran dijumpai.</p>
+                        <p class="muted small" style="margin: 0;">Cuba tukar penapis status atau kata carian di atas.</p>
+                    </td>
+                </tr>
+            <?php else: ?>
+                <?php foreach ($batches as $b):
+                    $bId = is_array($b) ? $b['id'] : $b->id;
+                    $batchNo = is_array($b) ? ($b['batch_no'] ?? '-') : ($b->batchNo ?? $b->batch_no ?? '-');
+                    $mName = is_array($b) ? ($b['member_name'] ?? ('Ahli #' . ($b['member_id'] ?? ''))) : ($b->member_name ?? ('Ahli #' . ($b->memberId ?? '')));
+                    $mPhone = is_array($b) ? ($b['member_phone'] ?? '') : ($b->member_phone ?? '');
+                    $mCode = is_array($b) ? ($b['member_code'] ?? '') : ($b->member_code ?? '');
+                    $totalAmt = is_array($b) ? ($b['total_amount'] ?? 0) : ($b->totalAmount ?? $b->total_amount ?? 0);
+                    $slipId = is_array($b) ? ($b['payment_slip_id'] ?? null) : ($b->paymentSlipId ?? $b->payment_slip_id ?? null);
+                    $slipName = is_array($b) ? ($b['slip_original_name'] ?? $b['slip_file_name'] ?? null) : null;
+                    $st = is_array($b) ? ($b['status'] ?? 'pending') : ($b->status ?? 'pending');
+                    $createdAt = is_array($b) ? ($b['created_at'] ?? '-') : ($b->createdAt ?? $b->created_at ?? '-');
+                    $badgeInfo = $statusBadge($st);
+                ?>
                     <tr>
-                        <th>No. Kumpulan</th>
-                        <th>Ahli</th>
-                        <th>Jumlah</th>
-                        <th>Tarikh</th>
-                        <th>Status</th>
-                        <th class="wrap">Tindakan</th>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                <strong style="font-family: monospace; font-size: 0.95rem; color: var(--primary, #2563eb);"><?= e($batchNo) ?></strong>
+                                <?php if ($mCode): ?>
+                                    <span class="badge badge-neutral" style="font-size: 0.75rem;"><?= e($mCode) ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <div style="font-weight: 600; color: #1e293b;"><?= e($mName) ?></div>
+                            <?php if ($mPhone): ?>
+                                <div class="muted small" style="display: flex; align-items: center; gap: 0.25rem; margin-top: 2px;">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                    <?= e($mPhone) ?>
+                                </div>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <strong style="font-size: 1.05rem;"><?= format_money($totalAmt) ?></strong>
+                        </td>
+                        <td>
+                            <?php if ($slipId): ?>
+                                <a href="<?= url('/file/slip/' . $slipId) ?>" class="btn btn-ghost btn-sm" target="_blank" title="Buka Slip Bayaran">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                    Lihat Slip
+                                </a>
+                            <?php else: ?>
+                                <span class="muted small">-</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <div><?= e(date('d/m/Y', strtotime((string)$createdAt))) ?></div>
+                            <div class="muted small"><?= e(date('H:i', strtotime((string)$createdAt))) ?></div>
+                        </td>
+                        <td>
+                            <span class="badge <?= $badgeInfo['class'] ?>"><?= e($badgeInfo['label']) ?></span>
+                        </td>
+                        <td class="wrap">
+                            <a href="<?= url('/admin/payments/' . $bId) ?>" class="btn <?= in_array($st, ['pending_verification', 'submitted', 'pending'], true) ? 'btn-primary' : 'btn-secondary' ?> btn-sm">
+                                <?= in_array($st, ['pending_verification', 'submitted', 'pending'], true) ? 'Sahkan' : 'Butiran' ?>
+                            </a>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($batches)): ?>
-                        <tr><td colspan="6" class="empty-state">Tiada kumpulan menunggu pengesahan.</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($batches as $b): ?>
-                            <tr>
-                                <td><?= e($b->batch_no ?? '-') ?></td>
-                                <td><?= e($b->member_name ?? $b->member_id ?? '-') ?></td>
-                                <td><?= format_money($b->total_amount ?? 0) ?></td>
-                                <td><?= e($b->created_at ?? '-') ?></td>
-                                <td><span class="badge badge-<?= $statusBadge($b->status ?? null) ?>"><?= e(ucfirst($b->status ?? 'menunggu')) ?></span></td>
-                                <td class="wrap">
-                                    <a href="<?= url('/admin/payments/' . $b->id) ?>" class="btn btn-secondary btn-sm">Lihat</a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
+    </table>
+</div>
