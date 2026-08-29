@@ -104,29 +104,42 @@
         var tabs = document.querySelectorAll('[role="tablist"] .settings-tab');
         if (!tabs.length) return;
 
+        function activateTab(targetId) {
+            if (!targetId) return;
+            tabs.forEach(function (tab) {
+                var active = tab.getAttribute('data-tab') === targetId;
+                tab.classList.toggle('is-active', active);
+                tab.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+
+            document.querySelectorAll('[data-pane]').forEach(function (pane) {
+                var active = pane.getAttribute('data-pane') === targetId;
+                pane.classList.toggle('is-active', active);
+                if (active) {
+                    pane.removeAttribute('hidden');
+                } else {
+                    pane.setAttribute('hidden', '');
+                }
+            });
+        }
+
         tabs.forEach(function (tab) {
             tab.addEventListener('click', function (event) {
                 event.preventDefault();
                 var targetId = tab.getAttribute('data-tab');
-                if (!targetId) return;
-
-                tabs.forEach(function (other) {
-                    var active = other === tab;
-                    other.classList.toggle('is-active', active);
-                    other.setAttribute('aria-selected', active ? 'true' : 'false');
-                });
-
-                document.querySelectorAll('[data-pane]').forEach(function (pane) {
-                    var active = pane.getAttribute('data-pane') === targetId;
-                    pane.classList.toggle('is-active', active);
-                    if (active) {
-                        pane.removeAttribute('hidden');
-                    } else {
-                        pane.setAttribute('hidden', '');
-                    }
-                });
+                activateTab(targetId);
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState(null, '', '#tab-' + targetId);
+                }
             });
         });
+
+        // Open specific tab if URL hash contains #tab-xyz
+        var hash = window.location.hash || '';
+        if (hash.indexOf('#tab-') === 0) {
+            var tabName = hash.replace('#tab-', '');
+            activateTab(tabName);
+        }
     }
 
     // ----------------------------------------------------------------------

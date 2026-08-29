@@ -9,6 +9,8 @@ Format mengikut Keep a Changelog.
 ## [Unreleased]
 
 ### Added - Pangkalan Data Eksport & Import (DB Backup & Restore)
+- Menambah menu **Pangkalan Data** di bawah kategori **Sistem** dalam sidebar navigasi pentadbir ([sidebar.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/partials/sidebar.php)) dengan sokongan pautan terus ke tab `#tab-database`.
+- Menambah sokongan deep-linking tab melalui URL hash dalam [app.js](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/public/assets/js/app.js).
 - Menambah perkhidmatan `DatabaseBackupService` ([DatabaseBackupService.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/services/DatabaseBackupService.php)) untuk menjana fail dump SQL penuh secara automatik dan mengimport fail SQL melalui transaksi selamat dengan semakan kekangan kunci asing (`FOREIGN_KEY_CHECKS`).
 - Menambah endpoint `/admin/settings/database/export` (muat turun fail `.sql`) dan `/admin/settings/database/import` (muat naik dan pulihkan pangkalan data) dalam [AdminSettingsController.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/controllers/AdminSettingsController.php) dan [web.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/routes/web.php).
 - Menambah kad antaramuka pengguna (UI) Eksport dan Import SQL di bawah tab Pangkalan Data dalam kategori **Sistem** ([settings.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/admin/settings.php)).

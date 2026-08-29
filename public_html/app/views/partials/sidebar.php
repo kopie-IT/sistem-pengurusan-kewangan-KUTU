@@ -100,8 +100,9 @@ if ($isAdmin) {
         $groups[] = [
             'label' => 'Sistem',
             'items' => [
-                ['label' => 'Urus Pengguna',  'url' => '/admin/users',     'icon' => 'users'],
-                ['label' => 'Tetapan',        'url' => '/admin/settings',  'icon' => 'settings'],
+                ['label' => 'Urus Pengguna',   'url' => '/admin/users',                    'icon' => 'users'],
+                ['label' => 'Tetapan',         'url' => '/admin/settings',                 'icon' => 'settings'],
+                ['label' => 'Pangkalan Data',  'url' => '/admin/settings#tab-database',    'icon' => 'database'],
             ],
         ];
     }
