@@ -20,32 +20,36 @@
         <?php else: ?>
             <div class="grid grid-3">
                 <?php foreach ($plans as $plan): ?>
-                    <div class="card">
-                        <div class="flex flex-between">
-                            <span class="badge badge-info"><?= e($plan->planCode) ?></span>
-                            <span class="badge badge-<?= $plan->status === 'active' ? 'success' : 'neutral' ?>"><?= e(ucfirst($plan->status)) ?></span>
+                    <div class="card plan-card">
+                        <div class="plan-card-body">
+                            <div class="flex flex-between">
+                                <span class="badge badge-info"><?= e($plan->planCode) ?></span>
+                                <span class="badge badge-<?= $plan->status === 'active' ? 'success' : 'neutral' ?>"><?= e(ucfirst($plan->status)) ?></span>
+                            </div>
+                            <h3 style="margin: 0.75rem 0 0.25rem;"><?= e($plan->name) ?></h3>
+                            <p class="muted small" style="margin-bottom: 0.75rem;">Caruman: <strong><?= format_money($plan->contributionAmount) ?></strong> / <?= e($plan->paymentFrequency) ?></p>
+
+                            <ul class="small muted" style="list-style: none; padding: 0; margin: 0; display: grid; gap: 0.35rem;">
+                                <li>Kitaran: <?= e((string) $plan->numberOfCycles) ?></li>
+                                <li>Mod pembayaran: <?= e($plan->payoutMode === 'fixed' ? 'Tetap' : 'Kutipan') ?></li>
+                                <li>Skor minimum: <?= e((string) $plan->minCreditScore) ?></li>
+                            </ul>
                         </div>
-                        <h3 style="margin: 0.75rem 0 0.25rem;"><?= e($plan->name) ?></h3>
-                        <p class="muted small">Caruman: <strong><?= format_money($plan->contributionAmount) ?></strong> / <?= e($plan->paymentFrequency) ?></p>
 
-                        <ul class="small muted" style="list-style: none; padding: 0; margin: 0.75rem 0; display: grid; gap: 0.35rem;">
-                            <li>Kitaran: <?= e((string) $plan->numberOfCycles) ?></li>
-                            <li>Mod pembayaran: <?= e($plan->payoutMode === 'fixed' ? 'Tetap' : 'Kutipan') ?></li>
-                            <li>Skor minimum: <?= e((string) $plan->minCreditScore) ?></li>
-                        </ul>
-
-                        <?php
-                        $status = $memberships[$plan->id] ?? null;
-                        if ($status !== null): ?>
-                            <span class="badge badge-<?= $status === 'active' ? 'success' : ($status === 'pending' ? 'warning' : 'neutral') ?>">
-                                <?= $status === 'active' ? 'Telah menyertai' : ($status === 'pending' ? 'Menunggu kelulusan' : ucfirst($status)) ?>
-                            </span>
-                        <?php else: ?>
-                            <form method="POST" action="<?= url('/plans/' . $plan->id . '/join') ?>" style="margin-top: 0.75rem;">
-                                <?= csrf_field() ?>
-                                <button type="submit" class="btn btn-primary btn-block">Sertai Pelan</button>
-                            </form>
-                        <?php endif; ?>
+                        <div class="plan-card-footer">
+                            <?php
+                            $status = $memberships[$plan->id] ?? null;
+                            if ($status !== null): ?>
+                                <span class="badge badge-<?= $status === 'active' ? 'success' : ($status === 'pending' ? 'warning' : 'neutral') ?>" style="width: 100%; justify-content: center; padding: 0.55rem 0.75rem;">
+                                    <?= $status === 'active' ? 'Telah menyertai' : ($status === 'pending' ? 'Menunggu kelulusan' : ucfirst($status)) ?>
+                                </span>
+                            <?php else: ?>
+                                <form method="POST" action="<?= url('/plans/' . $plan->id . '/join') ?>" style="margin: 0;">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="btn btn-primary btn-block">Sertai Pelan</button>
+                                </form>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             </div>
