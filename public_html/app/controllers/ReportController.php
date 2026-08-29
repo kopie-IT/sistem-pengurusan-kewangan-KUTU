@@ -28,13 +28,62 @@ final class ReportController extends Controller
     /** Financial ledger summary. */
     public function financial(): void
     {
-        $summary = $this->ledger->balanceSummary();
-        $recent = $this->ledger->recent(50);
+        $typeFilter = trim((string) ($_GET['type'] ?? ''));
+        $dateFilter = trim((string) ($_GET['date'] ?? ''));
+        $planFilter = (int) ($_GET['plan'] ?? 0);
+
+        $pdo = Database::connection();
+        $sql = 'SELECT lt.id, lt.transaction_type, lt.member_id, lt.plan_id, lt.reference_id,
+                       lt.amount, lt.currency, lt.description, lt.created_at,
+                       m.full_name AS member_name, m.member_code,
+                       p.name AS plan_name, p.plan_code
+                FROM ledger_transactions lt
+                LEFT JOIN members m ON m.id = lt.member_id
+                LEFT JOIN plans p ON p.id = lt.plan_id
+                WHERE 1=1';
+        $params = [];
+        if ($typeFilter !== '') {
+            $sql .= ' AND lt.transaction_type = :type';
+            $params[':type'] = $typeFilter;
+        }
+        if ($dateFilter !== '') {
+            $sql .= ' AND DATE(lt.created_at) = :date';
+            $params[':date'] = $dateFilter;
+        }
+        if ($planFilter > 0) {
+            $sql .= ' AND lt.plan_id = :plan';
+            $params[':plan'] = $planFilter;
+        }
+        $sql .= ' ORDER BY lt.id DESC LIMIT 500';
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $ledger = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+        $summarySql = 'SELECT
+                COALESCE(SUM(CASE WHEN transaction_type IN ("contribution","payment") THEN amount ELSE 0 END),0) AS total_in,
+                COALESCE(SUM(CASE WHEN transaction_type = "payout" THEN amount ELSE 0 END),0) AS total_out,
+                COALESCE(SUM(CASE WHEN transaction_type = "admin_fee" THEN amount ELSE 0 END),0) AS total_fee,
+                COALESCE(SUM(CASE WHEN transaction_type = "shortfall" THEN amount ELSE 0 END),0) AS total_shortfall,
+                COUNT(*) AS total_count
+            FROM ledger_transactions';
+        $summaryRow = $pdo->query($summarySql)->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        $byTypeSql = 'SELECT transaction_type, COUNT(*) AS cnt, COALESCE(SUM(amount),0) AS total
+            FROM ledger_transactions GROUP BY transaction_type ORDER BY total DESC';
+        $byType = $pdo->query($byTypeSql)->fetchAll(PDO::FETCH_ASSOC);
+
+        $plans = $this->planRepo->all();
 
         $this->view('reports/financial', [
-            'title'   => 'Laporan Kewangan',
-            'summary' => $summary,
-            'recent'  => $recent,
+            'title'      => 'Laporan Kewangan',
+            'summary'    => $summaryRow,
+            'byType'     => $byType,
+            'ledger'     => $ledger,
+            'plans'      => $plans,
+            'typeFilter' => $typeFilter !== '' ? $typeFilter : null,
+            'dateFilter' => $dateFilter !== '' ? $dateFilter : null,
+            'planFilter' => $planFilter,
         ]);
     }
 

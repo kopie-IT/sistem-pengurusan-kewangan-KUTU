@@ -47,6 +47,9 @@ final class AdminSettingsController extends Controller
         $blasts = $blastTableReady ? $this->blasts->all(20, 0) : [];
         $blastCount = $blastTableReady ? $this->blasts->count() : 0;
 
+        $dbTables = $this->collectDatabaseInventory();
+        $integrations = $this->collectIntegrationStatus();
+
         $this->view('admin/settings', [
             'title'             => 'Tetapan Sistem',
             'settings'          => $this->appSettings->all(),
@@ -54,6 +57,8 @@ final class AdminSettingsController extends Controller
             'blasts'            => $blasts,
             'blastCount'        => $blastCount,
             'blastTableReady'   => $blastTableReady,
+            'dbTables'          => $dbTables,
+            'integrations'      => $integrations,
         ]);
     }
 
@@ -347,5 +352,152 @@ final class AdminSettingsController extends Controller
         if (is_file($path)) {
             @unlink($path);
         }
+    }
+
+    /**
+     * Pull a live snapshot of the DB schema so the Sistem page can render the
+     * tables & column inventory straight from the live database. Limited to
+     * the current schema and grouped by category for readability.
+     *
+     * @return array<int, array{name: string, category: string, columns: array<int, array{name: string, type: string, nullable: bool, key: string, default: ?string}>}>
+     */
+    private function collectDatabaseInventory(): array
+    {
+        try {
+            $pdo = \App\Core\Database::connection();
+            $dbName = (string) $pdo->query('SELECT DATABASE()')->fetchColumn();
+
+            $tablesStmt = $pdo->prepare(
+                'SELECT TABLE_NAME, TABLE_ROWS
+                   FROM information_schema.TABLES
+                  WHERE TABLE_SCHEMA = :db
+               ORDER BY TABLE_NAME ASC'
+            );
+            $tablesStmt->execute([':db' => $dbName]);
+            $rawTables = $tablesStmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            $columnsStmt = $pdo->prepare(
+                'SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_TYPE, IS_NULLABLE,
+                        COLUMN_KEY, COLUMN_DEFAULT
+                   FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = :db
+               ORDER BY TABLE_NAME ASC, ORDINAL_POSITION ASC'
+            );
+            $columnsStmt->execute([':db' => $dbName]);
+            $columnRows = $columnsStmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            $columnsByTable = [];
+            foreach ($columnRows as $c) {
+                $columnsByTable[$c['TABLE_NAME']][] = [
+                    'name'     => (string) $c['COLUMN_NAME'],
+                    'type'     => (string) $c['COLUMN_TYPE'],
+                    'nullable' => ((string) $c['IS_NULLABLE']) === 'YES',
+                    'key'      => (string) ($c['COLUMN_KEY'] ?? ''),
+                    'default'  => $c['COLUMN_DEFAULT'] !== null ? (string) $c['COLUMN_DEFAULT'] : null,
+                ];
+            }
+
+            $groups = [
+                'auth'    => ['users', 'roles', 'user_roles', 'password_resets', 'sessions', 'audit_logs'],
+                'members' => ['members', 'member_documents', 'credit_scores', 'credit_score_history', 'credit_score_rules'],
+                'plans'   => ['plans', 'plan_members', 'plan_cycles', 'contribution_schedules', 'payout_schedules'],
+                'finance' => ['payment_batches', 'payment_slips', 'payouts', 'withdrawals', 'ledger_transactions', 'shortfalls', 'fees'],
+                'system'  => ['app_settings', 'system_settings', 'email_blasts', 'notifications', 'announcements'],
+            ];
+
+            $result = [];
+            foreach ($rawTables as $t) {
+                $name = (string) $t['TABLE_NAME'];
+                $category = 'lain-lain';
+                foreach ($groups as $cat => $tables) {
+                    if (in_array($name, $tables, true)) {
+                        $category = $cat;
+                        break;
+                    }
+                }
+                $result[] = [
+                    'name'     => $name,
+                    'category' => $category,
+                    'rows'     => (int) ($t['TABLE_ROWS'] ?? 0),
+                    'columns'  => $columnsByTable[$name] ?? [],
+                ];
+            }
+            return $result;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Build a flat list of integration fields & their currently stored values
+     * so the UI can render the actual config that the app is using at runtime.
+     *
+     * @return array<int, array{label: string, key: string, value: string, type: string, group: string}>
+     */
+    private function collectIntegrationStatus(): array
+    {
+        $cfg = $this->systemSettings->all();
+        $app = $this->appSettings->all();
+
+        $groups = [
+            'Identiti' => [
+                ['label' => 'Nama Sistem',         'key' => 'app_name',          'type' => 'string'],
+                ['label' => 'Tagline Penjenamaan', 'key' => 'brand_tagline',     'type' => 'string'],
+                ['label' => 'Logo Path',           'key' => 'logo_path',         'type' => 'file'],
+                ['label' => 'QR Sistem Path',      'key' => 'payment_qr_path',   'type' => 'file'],
+            ],
+            'Email Blast' => [
+                ['label' => 'Status',                'key' => 'email_blast_enabled',        'type' => 'bool'],
+                ['label' => 'Nama Pengirim',         'key' => 'email_blast_from_name',      'type' => 'string'],
+                ['label' => 'Emel Pengirim',         'key' => 'email_blast_from_email',     'type' => 'string'],
+                ['label' => 'Reply-To',              'key' => 'email_blast_reply_to',       'type' => 'string'],
+                ['label' => 'Subjek Lalai',          'key' => 'email_blast_default_subject', 'type' => 'string'],
+            ],
+            'WhatsApp (wap.net)' => [
+                ['label' => 'Status',           'key' => 'wapnet_enabled',          'type' => 'bool'],
+                ['label' => 'API Endpoint',     'key' => 'wapnet_api_url',          'type' => 'string'],
+                ['label' => 'API Key',          'key' => 'wapnet_api_key',          'type' => 'secret'],
+                ['label' => 'Sender ID',        'key' => 'wapnet_sender_id',        'type' => 'string'],
+                ['label' => 'Templat Lalai',    'key' => 'wapnet_default_template', 'type' => 'string'],
+            ],
+            'Operasi & Hubungan' => [
+                ['label' => 'Telefon Helpdesk', 'key' => 'system_contact_phone', 'type' => 'string'],
+                ['label' => 'Emel Helpdesk',    'key' => 'system_contact_email', 'type' => 'string'],
+            ],
+            'Keselamatan / CAPTCHA' => [
+                ['label' => 'CAPTCHA Global',          'key' => 'captcha_enabled',            'type' => 'bool'],
+                ['label' => 'CAPTCHA Log Masuk',       'key' => 'captcha_on_login',           'type' => 'bool'],
+                ['label' => 'CAPTCHA Pendaftaran',     'key' => 'captcha_on_register',        'type' => 'bool'],
+                ['label' => 'CAPTCHA Lupa Password',   'key' => 'captcha_on_forgot_password', 'type' => 'bool'],
+                ['label' => 'CAPTCHA Reset Password',  'key' => 'captcha_on_reset_password',  'type' => 'bool'],
+                ['label' => 'CAPTCHA Email Blast',     'key' => 'captcha_on_admin_blast',     'type' => 'bool'],
+                ['label' => 'AWS WAF API Key',         'key' => 'aws_waf_api_key',            'type' => 'secret'],
+                ['label' => 'AWS WAF Secret',          'key' => 'aws_waf_secret_key',         'type' => 'secret'],
+            ],
+        ];
+
+        $out = [];
+        foreach ($groups as $groupName => $items) {
+            foreach ($items as $item) {
+                $key = $item['key'];
+                $val = $app[$key] ?? ($cfg[$key] ?? null);
+                $isTrue = in_array($val, ['1', 1, true, 'true'], true);
+                $display = match ($item['type']) {
+                    'bool'   => $isTrue ? 'Aktif' : 'Dinyahaktif',
+                    'secret' => $val !== null && $val !== '' ? '••••••••' : '(kosong)',
+                    'file'   => $val ? (string) $val : '(lalai)',
+                    default  => $val !== null && $val !== '' ? (string) $val : '(kosong)',
+                };
+                $out[] = [
+                    'group'  => $groupName,
+                    'label'  => $item['label'],
+                    'key'    => $key,
+                    'value'  => (string) $val,
+                    'type'   => $item['type'],
+                    'display'=> $display,
+                ];
+            }
+        }
+        return $out;
     }
 }

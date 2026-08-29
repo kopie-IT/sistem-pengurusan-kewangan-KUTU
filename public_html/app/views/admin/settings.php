@@ -93,6 +93,7 @@ $statusTone = static function (string $s): string {
     <a href="#tab-wapnet" class="settings-tab" role="tab" aria-selected="false" data-tab="wapnet" style="padding: 0.75rem 1.25rem; font-weight: 600; text-decoration: none; border-radius: 6px 6px 0 0;">3. WhatsApp (wap.net)</a>
     <a href="#tab-operations" class="settings-tab" role="tab" aria-selected="false" data-tab="operations" style="padding: 0.75rem 1.25rem; font-weight: 600; text-decoration: none; border-radius: 6px 6px 0 0;">4. Operasi &amp; Hubungan</a>
     <a href="#tab-security" class="settings-tab" role="tab" aria-selected="false" data-tab="security" style="padding: 0.75rem 1.25rem; font-weight: 600; text-decoration: none; border-radius: 6px 6px 0 0;">5. Keselamatan &amp; CAPTCHA</a>
+    <a href="#tab-database" class="settings-tab" role="tab" aria-selected="false" data-tab="database" style="padding: 0.75rem 1.25rem; font-weight: 600; text-decoration: none; border-radius: 6px 6px 0 0;">6. Pangkalan Data &amp; Integrasi</a>
 </div>
 
 <form method="POST" action="<?= url('/admin/settings') ?>" enctype="multipart/form-data" novalidate>
@@ -327,6 +328,123 @@ $statusTone = static function (string $s): string {
                         <label for="aws_waf_secret_key" class="form-label" style="font-weight: 600;">AWS WAF Secret Key</label>
                         <input type="password" id="aws_waf_secret_key" name="aws_waf_secret_key" value="<?= e((string) ($systemConfig['aws_waf_secret_key'] ?? '')) ?>" class="form-control" placeholder="Secret Key" autocomplete="off">
                     </div>
+                </div>
+            </section>
+
+            <!-- TAB: Database & Integration Inspector -->
+            <section class="settings-pane" data-pane="database" aria-labelledby="tab-database" hidden>
+                <div style="margin-bottom: 1.5rem;">
+                    <h2 class="card-heading" id="tab-database" style="margin: 0; font-size: 1.25rem;">Pangkalan Data &amp; Konfigurasi Interasi</h2>
+                    <p class="muted small" style="margin-top: 0.25rem;">Data dipaparkan secara langsung dari pangkalan data MySQL/MariaDB dan jadual <code>system_settings</code> / <code>app_settings</code>.</p>
+                </div>
+
+                <?php
+                $catLabel = static fn (string $c): string => match ($c) {
+                    'auth'    => 'Pengesahan & Akses',
+                    'members' => 'Ahli & Skor Kredit',
+                    'plans'   => 'Pelan & Jadual',
+                    'finance' => 'Kewangan & Transaksi',
+                    'system'  => 'Tetapan Sistem',
+                    default   => 'Lain-lain',
+                };
+                $catTone = static fn (string $c): string => match ($c) {
+                    'auth'    => '#3b82f6',
+                    'members' => '#10b981',
+                    'plans'   => '#8b5cf6',
+                    'finance' => '#f59e0b',
+                    'system'  => '#64748b',
+                    default   => '#94a3b8',
+                };
+                $groupedTables = [];
+                foreach (($dbTables ?? []) as $tbl) {
+                    $groupedTables[$tbl['category']][] = $tbl;
+                }
+                ?>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1rem; font-weight: 600; margin: 0 0 0.75rem 0;">Inventori Jadual Pangkalan Data</h3>
+                    <?php if (empty($dbTables)): ?>
+                        <div class="alert alert-warning">Tidak dapat membaca skema pangkalan data. Pastikan pengguna DB mempunyai akses <code>information_schema</code>.</div>
+                    <?php else: ?>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <?php foreach ($groupedTables as $cat => $tbls): ?>
+                                <div class="card" style="padding: 1rem 1.25rem; border-left: 4px solid <?= $catTone($cat) ?>;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                                        <strong style="color: <?= $catTone($cat) ?>;"><?= e($catLabel($cat)) ?></strong>
+                                        <span class="badge badge-neutral"><?= count($tbls) ?> jadual</span>
+                                    </div>
+                                    <div class="table-wrap" style="max-height: 280px; overflow-y: auto;">
+                                        <table class="table" style="font-size: 0.85rem;">
+                                            <thead>
+                                                <tr>
+                                                    <th>Nama Jadual</th>
+                                                    <th style="text-align:right;">Anggaran Baris</th>
+                                                    <th style="text-align:right;">Kolum</th>
+                                                    <th>Skema</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($tbls as $tbl): ?>
+                                                    <tr>
+                                                        <td><code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;"><?= e($tbl['name']) ?></code></td>
+                                                        <td style="text-align:right;"><?= number_format((int) $tbl['rows']) ?></td>
+                                                        <td style="text-align:right;"><?= count($tbl['columns']) ?></td>
+                                                        <td>
+                                                            <?php foreach (array_slice($tbl['columns'], 0, 6) as $col): ?>
+                                                                <span class="badge badge-neutral" style="margin: 1px 2px; font-size: 0.7rem;" title="<?= e($col['name']) ?> &raquo; <?= e($col['type']) ?>"><?= e($col['name']) ?></span>
+                                                            <?php endforeach; ?>
+                                                            <?php if (count($tbl['columns']) > 6): ?>
+                                                                <span class="muted small">+<?= count($tbl['columns']) - 6 ?> lagi</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <h3 style="font-size: 1rem; font-weight: 600; margin: 0 0 0.75rem 0;">Konfigurasi Interasi Aktif (Live)</h3>
+                <p class="muted small" style="margin-bottom: 1rem;">Nilai yang sedang digunakan oleh sistem pada masa runtime.</p>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Kategori</th>
+                                <th>Tetapan</th>
+                                <th>Kunci</th>
+                                <th>Nilai</th>
+                                <th>Jenis</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $lastGroup = null;
+                            foreach (($integrations ?? []) as $i):
+                                $valTone = match (true) {
+                                    $i['type'] === 'bool' && $i['value'] === '1' => 'success',
+                                    $i['type'] === 'bool' => 'neutral',
+                                    $i['type'] === 'secret' && $i['value'] !== '' => 'info',
+                                    $i['value'] === '' || $i['value'] === null => 'warning',
+                                    default => 'neutral',
+                                };
+                            ?>
+                                <tr>
+                                    <td><?php if ($i['group'] !== $lastGroup): ?><span class="badge badge-primary"><?= e($i['group']) ?></span><?php $lastGroup = $i['group']; endif; ?></td>
+                                    <td><strong><?= e($i['label']) ?></strong></td>
+                                    <td><code style="font-size:0.78rem;"><?= e($i['key']) ?></code></td>
+                                    <td>
+                                        <span class="badge badge-<?= $valTone ?>"><?= e($i['display']) ?></span>
+                                    </td>
+                                    <td><span class="muted small"><?= e($i['type']) ?></span></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
             </section>
 
