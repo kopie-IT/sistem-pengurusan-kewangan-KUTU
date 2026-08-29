@@ -16,6 +16,9 @@ Format mengikut Keep a Changelog.
 - Menambah kad antaramuka pengguna (UI) Eksport dan Import SQL di bawah tab Pangkalan Data dalam kategori **Sistem** ([settings.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/admin/settings.php)).
 - Menambah rekod jejak audit keselamatan (`AuditService`) untuk aktiviti muat turun dan pemulihan pangkalan data.
 
+### Changed - Antaramuka & Susun Atur Halaman Pembayaran (Payment Layouts)
+- Menyelaraskan reka bentuk halaman bayaran tunggal ([single.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/payments/single.php)) dan bayaran pukal ([bulk.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/payments/bulk.php)) dengan kad ringkasan metrik (KPI cards), susun atur grid responsif yang kemas, panduan pembayaran, serta kalkulator jumlah bayaran pukal automatik.
+
 ### Fixed - Penyelarasan Tarikh Mula & Tarikh Tamat Kitaran Pelan
 - Mengemaskini `PlanService::ensurePlanCycles` ([PlanService.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/services/PlanService.php)) untuk mengira dan menyelaraskan `start_date` dan `end_date` bagi setiap kitaran secara seragam merentasi semua ahli pelan.
 
