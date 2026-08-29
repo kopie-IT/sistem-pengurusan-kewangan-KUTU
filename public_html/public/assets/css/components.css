@@ -10,7 +10,25 @@
     min-height: calc(100vh - var(--header-h));
 }
 @media (min-width: 1024px) {
-    .app-layout { grid-template-columns: 256px 1fr; }
+    .app-layout { grid-template-columns: 260px 1fr; }
+}
+
+.app-content {
+    min-width: 0;
+    width: 100%;
+}
+
+.app-content .container {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-inline: var(--space-6);
+}
+
+@media (min-width: 1280px) {
+    .app-content .container {
+        padding-inline: var(--space-8);
+    }
 }
 
 .app-sidebar {
