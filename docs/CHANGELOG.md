@@ -122,6 +122,22 @@ Format mengikut Keep a Changelog.
 - Welcome notification untuk ahli baharu.
 - Boleh dijalankan berulang (idempotent) — `php cron/seed_demo2.php`.
 
+### Added - Realistic Transaction Sample Data (seed_demo3)
+- Skrip baharu `cron/seed_demo3.php` menjana transaksi sampel yang lengkap dan realistik merentasi 10 kumpulan entiti, melengkapi data ahli/pelan sedia ada daripada `seed_demo.php` + `seed_demo2.php`.
+- **`plan_cycles`** — satu kitaran sebulan-kalender setiap pelan (4 bulan lepas + bulan semasa + 12 bulan hadapan); status `completed` / `active` / `upcoming` mengikut tarikh.
+- **`admin_fee_configs` + `admin_fee_versions`** — yuran pentadbir RM12 (pelan kecil) / RM25 (pelan besar) per pelan, dengan versi audit.
+- **`contribution_schedules`** — backfill jadual caruman untuk setiap kombinasi ahli × kitaran pelan yang hilang.
+- **`payment_slips` + `payment_batches` (approved) + `payment_batch_items` + `payments` (approved) + `ledger_transactions` (contribution + admin_fee)** untuk setiap kitaran lepas × ahli × pelan — supaya `/admin/payments`, `/admin/verification` (sejarah) dan laporan kewangan memaparkan data.
+- **Current-month `pending_verification`** batches untuk ~40% ahli supaya barisan semakan pentadbir tidak kosong.
+- **`payouts` + `ledger_transactions` (payout + admin_fee)** untuk semua `payout_schedules` yang tarikhnya ≤ hari ini (status `paid` dengan `paid_date`, `payment_reference`, `payment_slip_id`); baris `scheduled` yang hampir (≤ 7 hari) ditanda `due` supaya tersenarai dalam senarai tindakan admin.
+- **`shortfalls`** — satu `open` (85% kutipan) + satu `resolved` setiap pelan untuk paparan `/admin/shortfalls`.
+- **`withdrawal_requests`** — 1 `completed` + 2 `pending` untuk paparan `/admin/withdrawals`.
+- **`notifications`** — `payment.approved`, `payout.paid`, `payment.pending_reminder`, `shortfall.alert` untuk ahli.
+- **`email_blasts`** — 2 rekod log sampel untuk kegunaan laporan.
+- Ringkasan akhir memaparkan kiraan baris untuk 14 jadual.
+- Sepenuhnya idempotent: probe-before-insert untuk semua entiti + `batch_no` unik (format `BATCH-YYYYMMDD-MEMBERID-PLANID`). Boleh dijalankan berulang tanpa data pendua.
+- Cara jalan: `php cron/seed_demo3.php` (selepas `seed_demo.php` + `seed_demo2.php`).
+
 ### Changed - Sidebar Accordion & Admin-Only Tetapan
 - **Sidebar accordion**: `initSidebarCollapse()` dalam `public/assets/js/app.js` kini berkelakuan seperti accordion — apabila pengguna membuka satu kumpulan, semua kumpulan lain akan tertutup dahulu. Kumpulan yang mengandungi laluan aktif kekal dibuka selepas navigasi langsung. State kekal disimpan di `localStorage` (`mk:sidebar:groups:v1`).
 - **Tetapan Sistem (admin sahaja)**: halaman `/admin/settings` (GET + POST) kini hanya boleh diakses oleh peranan `admin` dan `super_admin` (staf dihalang). Akses dikawal oleh gate baru `Authorize::class => 'super_admin'` dalam `app/routes/web.php` (middleware menerima `['admin', 'super_admin']` sahaja, tiada `staff`).
