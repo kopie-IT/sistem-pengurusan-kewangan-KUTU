@@ -123,10 +123,10 @@ $statusBadge = function (?string $st): array {
                         </td>
                         <td>
                             <?php if ($slipId): ?>
-                                <a href="<?= url('/file/slip/' . $slipId) ?>" class="btn btn-ghost btn-sm" target="_blank" title="Buka Slip Bayaran">
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="openSlipModal('<?= url('/file/slip/' . $slipId) ?>', '<?= e($batchNo) ?>', '<?= e($mName) ?>')" title="Lihat Slip Bayaran">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                                     Lihat Slip
-                                </a>
+                                </button>
                             <?php else: ?>
                                 <span class="muted small">-</span>
                             <?php endif; ?>
@@ -149,3 +149,71 @@ $statusBadge = function (?string $st): array {
         </tbody>
     </table>
 </div>
+
+<!-- Modal Popup Slip Bayaran -->
+<div id="slipModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 9999; align-items: center; justify-content: center; padding: 1.5rem; backdrop-filter: blur(4px);">
+    <div class="card" style="background: #fff; width: 100%; max-width: 600px; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; max-height: 90vh;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+            <div>
+                <h3 style="margin: 0; font-size: 1.15rem; color: #1e293b;" id="slipModalTitle">Slip Bayaran</h3>
+                <span class="muted small" id="slipModalSubtitle"></span>
+            </div>
+            <button type="button" onclick="closeSlipModal()" style="background: transparent; border: 0; font-size: 1.5rem; cursor: pointer; color: #64748b; line-height: 1; padding: 0.25rem 0.5rem; border-radius: 4px;" aria-label="Tutup">&times;</button>
+        </div>
+        <div style="padding: 1.5rem; overflow-y: auto; text-align: center; background: #0f172a; flex: 1; display: flex; align-items: center; justify-content: center; min-height: 350px;">
+            <img id="slipModalImage" src="" alt="Slip Bayaran" style="max-width: 100%; max-height: 65vh; object-fit: contain; border-radius: 6px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);">
+            <iframe id="slipModalFrame" src="" style="width: 100%; height: 65vh; border: 0; display: none; background: #fff; border-radius: 6px;"></iframe>
+        </div>
+        <div style="padding: 1rem 1.5rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+            <a id="slipModalDirectLink" href="#" target="_blank" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 0.25rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                Buka Tab Baharu
+            </a>
+            <button type="button" onclick="closeSlipModal()" class="btn btn-primary btn-sm">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openSlipModal(url, batchNo, memberName) {
+    const modal = document.getElementById('slipModal');
+    const img = document.getElementById('slipModalImage');
+    const frame = document.getElementById('slipModalFrame');
+    const title = document.getElementById('slipModalTitle');
+    const subtitle = document.getElementById('slipModalSubtitle');
+    const link = document.getElementById('slipModalDirectLink');
+
+    title.textContent = 'Slip Bayaran: ' + batchNo;
+    subtitle.textContent = 'Ahli: ' + memberName;
+    link.href = url;
+
+    // Check extension
+    if (url.toLowerCase().endsWith('.pdf')) {
+        img.style.display = 'none';
+        frame.style.display = 'block';
+        frame.src = url;
+    } else {
+        frame.style.display = 'none';
+        img.style.display = 'block';
+        img.src = url;
+    }
+
+    modal.style.display = 'flex';
+}
+
+function closeSlipModal() {
+    const modal = document.getElementById('slipModal');
+    const img = document.getElementById('slipModalImage');
+    const frame = document.getElementById('slipModalFrame');
+    modal.style.display = 'none';
+    img.src = '';
+    frame.src = '';
+}
+
+// Close on backdrop click
+document.getElementById('slipModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeSlipModal();
+    }
+});
+</script>
