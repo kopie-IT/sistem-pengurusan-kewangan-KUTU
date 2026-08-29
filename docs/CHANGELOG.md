@@ -20,6 +20,12 @@ Format mengikut Keep a Changelog.
 - Menyelaraskan reka bentuk halaman bayaran tunggal ([single.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/payments/single.php)) dan bayaran pukal ([bulk.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/payments/bulk.php)) dengan kad ringkasan metrik (KPI cards), susun atur grid responsif yang kemas, panduan pembayaran, serta kalkulator jumlah bayaran pukal automatik.
 - Menetapkan had lebar `.app-content .container` kepada `max-width: 1280px` dengan pemusatan automatik dan padding kemas bagi mengelakkan paparan badan halaman terlalu lebar pada skrin besar ([components.css](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/public/assets/css/components.css)).
 
+### Refactored - Halaman Pangkalan Data Tersendiri
+- Memisahkan fungsi Eksport & Import SQL daripada tab Tetapan ke halaman khusus di `/admin/settings/database` ([database.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/admin/database.php)).
+- Memadam tab "6. Pangkalan Data & Integrasi" daripada halaman [settings.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/admin/settings.php) untuk mengelakkan pertindihan kandungan.
+- Menambah route `GET /admin/settings/database` dalam [web.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/routes/web.php) dan action `database()` dalam [AdminSettingsController.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/controllers/AdminSettingsController.php).
+- Mengemas kini pautan sidebar **Pangkalan Data** dalam [sidebar.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/partials/sidebar.php) supaya merujuk ke halaman khusus.
+
 ### Fixed - Penyelarasan Tarikh Mula & Tarikh Tamat Kitaran Pelan
 - Mengemaskini `PlanService::ensurePlanCycles` ([PlanService.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/services/PlanService.php)) untuk mengira dan menyelaraskan `start_date` dan `end_date` bagi setiap kitaran secara seragam merentasi semua ahli pelan.
 

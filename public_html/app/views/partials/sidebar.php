@@ -102,7 +102,7 @@ if ($isAdmin) {
             'items' => [
                 ['label' => 'Urus Pengguna',   'url' => '/admin/users',                    'icon' => 'users'],
                 ['label' => 'Tetapan',         'url' => '/admin/settings',                 'icon' => 'settings'],
-                ['label' => 'Pangkalan Data',  'url' => '/admin/settings#tab-database',    'icon' => 'database'],
+                ['label' => 'Pangkalan Data',  'url' => '/admin/settings/database',          'icon' => 'database'],
             ],
         ];
     }

@@ -48,9 +48,6 @@ final class AdminSettingsController extends Controller
         $blasts = $blastTableReady ? $this->blasts->all(20, 0) : [];
         $blastCount = $blastTableReady ? $this->blasts->count() : 0;
 
-        $dbTables = $this->collectDatabaseInventory();
-        $integrations = $this->collectIntegrationStatus();
-
         $this->view('admin/settings', [
             'title'             => 'Tetapan Sistem',
             'settings'          => $this->appSettings->all(),
@@ -58,8 +55,19 @@ final class AdminSettingsController extends Controller
             'blasts'            => $blasts,
             'blastCount'        => $blastCount,
             'blastTableReady'   => $blastTableReady,
-            'dbTables'          => $dbTables,
-            'integrations'      => $integrations,
+        ]);
+    }
+
+    /**
+     * Dedicated page for database backup & restore (separate from Tetapan).
+     */
+    public function database(): void
+    {
+        $dbTables = $this->collectDatabaseInventory();
+
+        $this->view('admin/database', [
+            'title'    => 'Pangkalan Data & Sandaran',
+            'dbTables' => $dbTables,
         ]);
     }
 
@@ -96,36 +104,36 @@ final class AdminSettingsController extends Controller
         $token = (string) ($_POST['csrf_token'] ?? '');
         if (!hash_equals((string) ($_SESSION['csrf_token'] ?? ''), $token)) {
             set_flash('error', 'Sesi tidak sah. Sila cuba lagi.');
-            $this->redirect('/admin/settings#tab-database');
+            $this->redirect('/admin/settings/database');
         }
 
         if (empty($_FILES['sql_file']) || ($_FILES['sql_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
             set_flash('error', 'Sila pilih fail SQL yang sah untuk dimuat naik.');
-            $this->redirect('/admin/settings#tab-database');
+            $this->redirect('/admin/settings/database');
         }
 
         $file = $_FILES['sql_file'];
         if (!is_uploaded_file($file['tmp_name'])) {
             set_flash('error', 'Fail muat naik tidak sah.');
-            $this->redirect('/admin/settings#tab-database');
+            $this->redirect('/admin/settings/database');
         }
 
         // Limit SQL file size to 25MB
         if ((int) $file['size'] > 25 * 1024 * 1024) {
             set_flash('error', 'Saiz fail SQL melebihi had maksimum 25 MB.');
-            $this->redirect('/admin/settings#tab-database');
+            $this->redirect('/admin/settings/database');
         }
 
         $ext = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
         if ($ext !== 'sql') {
             set_flash('error', 'Hanya fail berformat .sql dibenarkan untuk proses import.');
-            $this->redirect('/admin/settings#tab-database');
+            $this->redirect('/admin/settings/database');
         }
 
         $sqlContent = file_get_contents($file['tmp_name']);
         if ($sqlContent === false || trim($sqlContent) === '') {
             set_flash('error', 'Gagal membaca kandungan fail SQL.');
-            $this->redirect('/admin/settings#tab-database');
+            $this->redirect('/admin/settings/database');
         }
 
         $backupService = new DatabaseBackupService();
@@ -141,7 +149,7 @@ final class AdminSettingsController extends Controller
             set_flash('error', $result['error'] ?? 'Gagal memproses import fail SQL.');
         }
 
-        $this->redirect('/admin/settings#tab-database');
+        $this->redirect('/admin/settings/database');
     }
 
     public function update(): void

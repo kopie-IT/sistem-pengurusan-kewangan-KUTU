@@ -173,6 +173,7 @@ $router->post('/admin/payouts/{id}/slip',     [PayoutController::class, 'confirm
 $router->get('/admin/settings',                 [AdminSettingsController::class, 'index'],          'admin.settings', $superAdmin);
 $router->post('/admin/settings',                [AdminSettingsController::class, 'update'],         null,             $superAdmin);
 $router->post('/admin/settings/blast',          [AdminSettingsController::class, 'sendBlast'],      null,             $superAdmin);
+$router->get('/admin/settings/database',        [AdminSettingsController::class, 'database'],       'admin.settings.database', $superAdmin);
 $router->get('/admin/settings/database/export', [AdminSettingsController::class, 'exportDatabase'], 'admin.database.export', $superAdmin);
 $router->post('/admin/settings/database/import',[AdminSettingsController::class, 'importDatabase'], 'admin.database.import', $superAdmin);
 
