@@ -876,25 +876,34 @@ button, input, select, textarea { font: inherit; color: inherit; }
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.125rem;
-    height: 2.125rem;
-    padding: 0;
+    width: 2.35rem;
+    height: 2.35rem;
+    padding: 0 !important;
     border-radius: var(--radius-md);
     flex-shrink: 0;
     position: relative;
+    box-sizing: border-box;
 }
 .btn-icon svg {
-    width: 1.1rem;
-    height: 1.1rem;
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+    min-width: 1.25rem;
+    min-height: 1.25rem;
+    display: block;
+    stroke-width: 2;
     pointer-events: none;
+    flex-shrink: 0;
 }
 .btn-icon.btn-sm {
-    width: 1.95rem;
-    height: 1.95rem;
+    width: 2.15rem;
+    height: 2.15rem;
+    padding: 0 !important;
 }
 .btn-icon.btn-sm svg {
-    width: 0.95rem;
-    height: 0.95rem;
+    width: 1.15rem !important;
+    height: 1.15rem !important;
+    min-width: 1.15rem;
+    min-height: 1.15rem;
 }
 .btn-danger-ghost {
     color: var(--color-rose-600);
