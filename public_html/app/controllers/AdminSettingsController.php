@@ -38,16 +38,22 @@ final class AdminSettingsController extends Controller
         private SystemSettingService  $systemSettings,
         private EmailBlastService     $blaster,
         private EmailBlastRepository  $blasts,
+        private \App\Services\CaptchaService $captcha,
     ) {}
 
     public function index(): void
     {
+        $blastTableReady = $this->blasts->isTableReady();
+        $blasts = $blastTableReady ? $this->blasts->all(20, 0) : [];
+        $blastCount = $blastTableReady ? $this->blasts->count() : 0;
+
         $this->view('admin/settings', [
-            'title'         => 'Tetapan Sistem',
-            'settings'      => $this->appSettings->all(),
-            'systemConfig'  => $this->systemSettings->all(),
-            'blasts'        => $this->blasts->all(20, 0),
-            'blastCount'    => $this->blasts->count(),
+            'title'             => 'Tetapan Sistem',
+            'settings'          => $this->appSettings->all(),
+            'systemConfig'      => $this->systemSettings->all(),
+            'blasts'            => $blasts,
+            'blastCount'        => $blastCount,
+            'blastTableReady'   => $blastTableReady,
         ]);
     }
 
@@ -57,6 +63,15 @@ final class AdminSettingsController extends Controller
         if (!hash_equals((string) ($_SESSION['csrf_token'] ?? ''), $token)) {
             set_flash('error', 'Sesi tidak sah. Sila cuba lagi.');
             $this->redirect('/admin/settings');
+        }
+
+        if ($this->captcha->isRequiredOn('admin_settings')) {
+            $answer = (string) ($_POST['captcha_answer_admin_settings'] ?? '');
+            $capToken = (string) ($_POST['captcha_token_admin_settings']  ?? '');
+            if (!$this->captcha->verify($answer, $capToken)) {
+                set_flash('error', 'Pengesahan CAPTCHA gagal. Sila cuba lagi.');
+                $this->redirect('/admin/settings');
+            }
         }
 
         // ----- Identity (text fields) ---------------------------------
@@ -145,6 +160,31 @@ final class AdminSettingsController extends Controller
             $this->systemSettings->set($k, $v, 'string');
         }
 
+        // ----- CAPTCHA / AWS WAF settings ------------------------------
+        $captchaToggles = [
+            'captcha_enabled'              => isset($_POST['captcha_enabled']),
+            'captcha_on_login'             => isset($_POST['captcha_on_login']),
+            'captcha_on_register'          => isset($_POST['captcha_on_register']),
+            'captcha_on_forgot_password'   => isset($_POST['captcha_on_forgot_password']),
+            'captcha_on_reset_password'    => isset($_POST['captcha_on_reset_password']),
+            'captcha_on_admin_blast'       => isset($_POST['captcha_on_admin_blast']),
+        ];
+        foreach ($captchaToggles as $k => $on) {
+            $this->systemSettings->set($k, $on ? '1' : '0', 'bool');
+        }
+
+        $awsWaf = [
+            'aws_waf_api_key'      => trim((string) ($_POST['aws_waf_api_key']      ?? '')),
+            'aws_waf_secret_key'   => trim((string) ($_POST['aws_waf_secret_key']   ?? '')),
+            'aws_waf_captcha_api'  => trim((string) ($_POST['aws_waf_captcha_api']  ?? '')),
+            'aws_waf_captcha_js'   => trim((string) ($_POST['aws_waf_captcha_js']   ?? '')),
+        ];
+        // Empty fields clear the existing value (so re-saving with a blank
+        // field actually wipes the key, instead of leaving the old one).
+        foreach ($awsWaf as $k => $v) {
+            $this->systemSettings->set($k, $v !== '' ? $v : null, 'string');
+        }
+
         AuditService::log('settings.updated', (int) ($_SESSION['user_id'] ?? 0), 'app_settings', 0, [
             'app_name_changed' => true,
             'logo_changed'     => $newLogoError === null && !empty($_FILES['logo']['tmp_name'] ?? ''),
@@ -182,6 +222,20 @@ final class AdminSettingsController extends Controller
         if (!$this->systemSettings->get('email_blast_enabled', false)) {
             set_flash('error', 'Email blast belum diaktifkan. Aktifkan pada borang Tetapan dahulu.');
             $this->redirect('/admin/settings');
+        }
+
+        if (!$this->blasts->isTableReady()) {
+            set_flash('error', 'Jadual email_blasts belum dicipta. Jalankan migration 005_system_config.sql.');
+            $this->redirect('/admin/settings');
+        }
+
+        if ($this->captcha->isRequiredOn('admin_blast')) {
+            $answer = (string) ($_POST['captcha_answer_admin_blast'] ?? '');
+            $token  = (string) ($_POST['captcha_token_admin_blast']  ?? '');
+            if (!$this->captcha->verify($answer, $token)) {
+                set_flash('error', 'Pengesahan CAPTCHA gagal. Sila cuba lagi.');
+                $this->redirect('/admin/settings');
+            }
         }
 
         $subject = trim((string) ($_POST['subject'] ?? ''));

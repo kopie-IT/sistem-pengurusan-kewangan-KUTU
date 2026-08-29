@@ -62,6 +62,8 @@
                     <p class="form-help">Minimum 8 aksara, mengandungi huruf besar, huruf kecil, dan nombor.</p>
                 </div>
 
+                <?= captcha_field('reset_password') ?>
+
                 <button type="submit" class="btn btn-primary btn-block btn-lg">
                     <?= !empty($hasToken) ? 'Reset Kata Laluan' : 'Tetapkan &amp; Teruskan' ?>
                 </button>

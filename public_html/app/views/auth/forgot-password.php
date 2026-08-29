@@ -45,6 +45,8 @@
                     <?php unset($_SESSION['old']); ?>
                 </div>
 
+                <?= captcha_field('forgot_password') ?>
+
                 <button type="submit" class="btn btn-primary btn-block btn-lg">
                     Hantar Pautan Reset
                 </button>

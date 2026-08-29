@@ -357,6 +357,54 @@
     }
 
     // ----------------------------------------------------------------------
+    // CAPTCHA refresh button
+    // ----------------------------------------------------------------------
+    //
+    // Replaces the current math challenge with a freshly-issued one (fetched
+    // from /captcha/refresh). Fails silently if the endpoint returns an
+    // error or CAPTCHA is disabled — the user just gets a stale question
+    // and a friendly error on submit.
+    function initCaptchaRefresh() {
+        var buttons = document.querySelectorAll('[data-captcha-refresh]');
+        if (!buttons.length) return;
+
+        buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var block = btn.closest('.captcha-field');
+                if (!block) return;
+                var formKey = block.getAttribute('data-captcha-form') || '';
+                var questionEl = block.querySelector('.captcha-question');
+                var tokenEl    = block.querySelector('input[name="captcha_token_' + formKey + '"]');
+                var inputEl    = block.querySelector('input[name="captcha_answer_' + formKey + '"]');
+                if (!questionEl) return;
+
+                var originalLabel = btn.innerHTML;
+                btn.setAttribute('disabled', 'disabled');
+                btn.style.opacity = '0.5';
+
+                fetch('/captcha/refresh', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                    .then(function (r) { return r.ok ? r.json() : Promise.reject(r); })
+                    .then(function (data) {
+                        if (data && data.ok && data.question) {
+                            questionEl.textContent = data.question;
+                            if (tokenEl && data.token) { tokenEl.value = data.token; }
+                            if (inputEl) { inputEl.value = ''; inputEl.focus(); }
+                            block.classList.remove('is-error');
+                        }
+                    })
+                    .catch(function () {
+                        // Refresh is non-critical; the form will show an
+                        // error on submit if the puzzle is actually stale.
+                    })
+                    .then(function () {
+                        btn.removeAttribute('disabled');
+                        btn.style.opacity = '';
+                    });
+            });
+        });
+    }
+
+    // ----------------------------------------------------------------------
     // Profile avatar live preview
     // ----------------------------------------------------------------------
     //
@@ -399,5 +447,6 @@
         initSettingsTabs();
         initUserMenu();
         initAvatarPreview();
+        initCaptchaRefresh();
     });
 })();

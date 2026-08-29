@@ -65,6 +65,8 @@
                            class="form-control">
                 </div>
 
+                <?= captcha_field('register') ?>
+
                 <button type="submit" class="btn btn-primary btn-block btn-lg">Daftar Akaun</button>
 
                 <p class="text-center text-muted" style="font-size: 0.9rem; margin-top: 1.25rem;">

@@ -6,6 +6,7 @@ use App\Controllers\AdminController;
 use App\Controllers\AdminSettingsController;
 use App\Controllers\AuthController;
 use App\Controllers\CalendarController;
+use App\Controllers\CaptchaController;
 use App\Controllers\CreditScoreController;
 use App\Controllers\DashboardController;
 use App\Controllers\FileController;
@@ -29,6 +30,8 @@ use App\Middleware\ForcePasswordReset;
 use App\Repositories\PasswordResetRepository;
 use App\Repositories\UserRepository;
 use App\Services\AuthService;
+use App\Services\CaptchaService;
+use App\Services\SystemSettingService;
 
 // Service container with shared services
 $container = new Container();
@@ -56,6 +59,10 @@ $router->get('/login',     [AuthController::class, 'showLogin'], 'login');
 $router->post('/login',    [AuthController::class, 'login']);
 $router->get('/register',  [AuthController::class, 'showRegister'], 'register');
 $router->post('/register', [AuthController::class, 'register']);
+
+// Public CAPTCHA refresh endpoint (returns JSON). CSRF-exempt because the
+// response is idempotent and never mutates user state.
+$router->get('/captcha/refresh', [CaptchaController::class, 'refresh'], 'captcha.refresh');
 
 $router->get('/reset-password',  [AuthController::class, 'showResetPassword'], 'reset-password');
 $router->post('/reset-password', [AuthController::class, 'resetPassword']);

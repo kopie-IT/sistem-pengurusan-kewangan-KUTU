@@ -201,3 +201,60 @@ if (!function_exists('user_avatar_url')) {
         return ($stored !== null && $stored !== '') ? '/file/avatar/' . $userId : null;
     }
 }
+
+if (!function_exists('captcha_service')) {
+    /**
+     * Resolves a CaptchaService (caches per-request). The required
+     * SystemSettingService is built on demand — but to keep this helper
+     * independent of the DI container (so it can be called before the
+     * container is built), we lazily construct it with a SystemSettingRepository.
+     */
+    function captcha_service(): \App\Services\CaptchaService
+    {
+        static $cache = null;
+        if ($cache === null) {
+            $system = new \App\Services\SystemSettingService(new \App\Repositories\SystemSettingRepository());
+            $cache = new \App\Services\CaptchaService($system);
+        }
+        return $cache;
+    }
+}
+
+if (!function_exists('captcha_field')) {
+    /**
+     * Renders the CAPTCHA challenge + answer input for a given form key.
+     * Returns an empty string when CAPTCHA is disabled for that form.
+     */
+    function captcha_field(string $formKey): string
+    {
+        $svc = captcha_service();
+        if (!$svc->isRequiredOn($formKey)) {
+            return '';
+        }
+        $question = $svc->currentQuestion();
+        $token    = (string) ($_SESSION[\App\Services\CaptchaService::SESSION_TOKEN] ?? '');
+
+        $hQuestion = htmlspecialchars($question, ENT_QUOTES, 'UTF-8');
+        $hToken    = htmlspecialchars($token, ENT_QUOTES, 'UTF-8');
+        $hFormKey  = htmlspecialchars($formKey, ENT_QUOTES, 'UTF-8');
+
+        return <<<HTML
+<div class="form-group captcha-field" data-captcha-form="{$hFormKey}">
+    <label for="captcha_answer_{$hFormKey}" class="form-label">Pengesahan Anti-Spam</label>
+    <div class="captcha-challenge">
+        <span class="captcha-question" aria-live="polite">{$hQuestion}</span>
+        <button type="button" class="captcha-refresh" data-captcha-refresh
+                aria-label="Tukar soalan captcha" title="Tukar soalan">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+    </div>
+    <input type="hidden" name="captcha_token_{$hFormKey}" value="{$hToken}">
+    <input type="number" id="captcha_answer_{$hFormKey}" name="captcha_answer_{$hFormKey}"
+           class="form-control" required min="0" max="999"
+           inputmode="numeric" autocomplete="off"
+           placeholder="Taip jawapan">
+    <p class="form-help">Soalan ringkas untuk pastikan anda bukan robot.</p>
+</div>
+HTML;
+    }
+}

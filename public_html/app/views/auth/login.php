@@ -66,6 +66,8 @@
                     <a href="<?= url('/forgot-password') ?>">Lupa kata laluan?</a>
                 </div>
 
+                <?= captcha_field('login') ?>
+
                 <button type="submit" class="btn btn-primary btn-block btn-lg">Log Masuk</button>
 
                 <p class="text-center text-muted" style="font-size: 0.9rem; margin-top: 1.25rem;">

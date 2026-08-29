@@ -59,7 +59,17 @@ final class EmailBlastRepository
                 INNER JOIN users u ON u.id = b.created_by
                 ORDER BY b.id DESC
                 LIMIT :limit OFFSET :offset';
-        $stmt = Database::connection()->prepare($sql);
+        try {
+            $stmt = Database::connection()->prepare($sql);
+        } catch (\PDOException $e) {
+            // The `email_blasts` table may not exist yet on a fresh install
+            // that skipped migration 005. Treat that as an empty history
+            // instead of crashing the settings page.
+            if ($this->isMissingTable($e)) {
+                return [];
+            }
+            throw $e;
+        }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -68,7 +78,32 @@ final class EmailBlastRepository
 
     public function count(): int
     {
-        $stmt = Database::connection()->query('SELECT COUNT(*) FROM email_blasts');
-        return (int) $stmt->fetchColumn();
+        try {
+            return (int) Database::connection()->query('SELECT COUNT(*) FROM email_blasts')->fetchColumn();
+        } catch (\PDOException $e) {
+            if ($this->isMissingTable($e)) {
+                return 0;
+            }
+            throw $e;
+        }
+    }
+
+    public function isTableReady(): bool
+    {
+        try {
+            Database::connection()->query('SELECT 1 FROM email_blasts LIMIT 1');
+            return true;
+        } catch (\PDOException $e) {
+            if ($this->isMissingTable($e)) {
+                return false;
+            }
+            throw $e;
+        }
+    }
+
+    private function isMissingTable(\PDOException $e): bool
+    {
+        // MySQL 1146 / SQLSTATE 42S02 = "Base table or view not found".
+        return $e->getCode() === '42S02' || str_contains($e->getMessage(), "doesn't exist") || str_contains($e->getMessage(), 'Base table or view not found');
     }
 }

@@ -8,6 +8,68 @@ Format mengikut Keep a Changelog.
 
 ## [Unreleased]
 
+### Fixed - SQL error `email_blasts table doesn't exist` on fresh install
+- `EmailBlastRepository::all()` dan `count()` kini defensif: jika jadual
+  belum dicipta, `all()` pulangkan senarai kosong dan `count()` pulangkan
+  0. Penambahan `isTableReady()` supaya caller boleh paparkan amaran
+  kepada admin tanpa membazir dengan ralat SQL.
+- Halaman Tetapan Sistem memaparkan banner amaran jika jadual
+  `email_blasts` belum dicipta, dengan arahan untuk jalankan migration
+  005.
+- Migration 005 (email_blasts) dikekalkan seperti sedia ada; tiada
+  perubahan skema diperlukan untuk fix ini.
+
+### Added - Credit Score card on Dashboard
+- `DashboardController` kini menyuntik `MemberRepository` +
+  `CreditScoreService` dan menghantar skor semasa ahli ke view.
+- Kad **Skor Kredit** diletakkan terus di bawah blok "Selamat datang"
+  (di luar grid tindakan), mengandungi:
+  - **Cincin progres** SVG (0–100) dengan animasi transition.
+  - **Lencana tahap** (Cemerlang / Baik / Sederhana / Berisiko /
+    Berisiko Tinggi / Belum Dinilai).
+  - **Penerangan dinamik** ikut tahap.
+  - **Senarai faktor** (+5 caruman, −10/−25 kelewatan, +15 payout sempurna).
+  - Butang **Lihat Sejarah Penuh** ke `/credit-score` + kod ahli.
+- Kad ringkasan profil di grid juga memaparkan nilai skor.
+- Pada dashboard pentadbir, kad ini dipaparkan (admin tidak semestinya
+  ahli, tetapi jika ya, skor dipaparkan; jika tidak, kad dilangkau
+  tanpa jatuh).
+
+### Added - CAPTCHA (math) + AWS WAF configuration
+- `CaptchaService` (math CAPTCHA) menjana soalan tambah / darab (2–9) +
+  menyimpan jawapan + token + cap masa dalam session (TTL 10 minit,
+  auto-pusing selepas setiap percubaan).
+- `CaptchaController::refresh()` mengembalikan JSON untuk butang
+  "Tukar soalan" pada form (panggil `fetch` tanpa reload).
+- Tetapan CAPTCHA ditambah dalam **Tetapan > Keselamatan & CAPTCHA**
+  (tab ke-5):
+  - `captcha_enabled` (master switch).
+  - 5 toggle per-borang: `login`, `register`, `forgot_password`,
+    `reset_password`, `admin_blast`.
+  - **AWS WAF** keys (`api_key`, `secret_key`, endpoint API, URL JS)
+    disimpan sebagai konfigurasi untuk integrasi AWS WAF Captcha
+    masa depan (math CAPTCHA kekal aktif sehingga JS integration
+    disambungkan).
+- CAPTCHA dipasang pada borang sensitif:
+  - **Log masuk** (`/login`)
+  - **Daftar akaun** (`/register`)
+  - **Lupa kata laluan** (`/forgot-password`)
+  - **Reset kata laluan** (`/reset-password`)
+  - **Email blast admin** (`/admin/settings/blast`)
+  - **Simpan tetapan admin** (`/admin/settings` POST)
+- `captcha_field('key')` helper dipanggil dari view; CAPTCHA tidak
+  dipaparkan jika togol dimatikan atau tetapan tidak tersedia
+  (gagal tertutup).
+- Migration `007_captcha_config.sql` menambah baris lalai
+  (`captcha_enabled = 1`, semua togol per-borang = 1, AWS WAF keys
+  placeholder).
+- CSS: `.captcha-field`, `.captcha-question`, `.captcha-refresh`,
+  `.alert-warning`, `.alert-info`, `.alert-success`, `.alert-danger`.
+- JS: `initCaptchaRefresh()` (butang ↻ + fetch JSON) + visual state
+  `.is-error` selepas gagal.
+- Audit: tiada event khusus — CAPTCHA ditolak hanya di flash biasa.
+
+
 ### Added - Avatar & Profile Menu in Header
 - Header authenticated kini memaparkan butang avatar (atau gelembung inisial jika tiada avatar) di sebelah kanan, dengan menu dropdown: **Kemaskini Profil**, **Tukar Kata Laluan**, dan **Log Keluar**.
 - Fungsi `user_avatar_url($userId)` dan `user_initials($name)` ditambah dalam `app/helpers/functions.php` untuk kegunaan global (header, mobile menu, halaman profil).

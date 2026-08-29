@@ -13,7 +13,28 @@ final class AuthController extends Controller
     public function __construct(
         private AuthService $auth,
         private UserRepository $users,
+        private \App\Services\CaptchaService $captcha,
     ) {}
+
+    /**
+     * Verify CAPTCHA for a form key, preserving the old email input on
+     * failure. Returns true on success.
+     */
+    private function verifyCaptchaOrFail(string $formKey, string $emailField, string $redirect): void
+    {
+        if (!$this->captcha->isRequiredOn($formKey)) {
+            return;
+        }
+        $answer = (string) ($_POST['captcha_answer_' . $formKey] ?? '');
+        $token  = (string) ($_POST['captcha_token_'  . $formKey] ?? '');
+        if (!$this->captcha->verify($answer, $token)) {
+            set_flash('error', 'Pengesahan CAPTCHA gagal. Sila cuba lagi.');
+            if ($emailField !== '') {
+                $_SESSION['old'][$emailField] = (string) ($_POST[$emailField] ?? '');
+            }
+            $this->redirect($redirect);
+        }
+    }
 
     public function showLogin(): void
     {
@@ -37,6 +58,8 @@ final class AuthController extends Controller
             $_SESSION['old']['email'] = $email;
             $this->redirect('/login');
         }
+
+        $this->verifyCaptchaOrFail('login', 'email', '/login');
 
         if ($email === '' || $password === '') {
             set_flash('error', 'Sila masukkan emel dan kata laluan.');
@@ -84,6 +107,8 @@ final class AuthController extends Controller
         $password = (string) ($_POST['password'] ?? '');
         $passwordConfirm = (string) ($_POST['password_confirm'] ?? '');
 
+        $this->verifyCaptchaOrFail('register', 'email', '/register');
+
         if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || $password === '') {
             set_flash('error', 'Sila isi semua maklumat dengan betul.');
             $this->redirect('/register');
@@ -127,6 +152,8 @@ final class AuthController extends Controller
         $newPassword = (string) ($_POST['password'] ?? '');
         $confirm     = (string) ($_POST['password_confirm'] ?? '');
         $resetToken  = (string) ($_POST['reset_token'] ?? '');
+
+        $this->verifyCaptchaOrFail('reset_password', '', $this->redirectTarget($resetToken));
 
         if ($newPassword === '' || $newPassword !== $confirm) {
             set_flash('error', 'Kata laluan baru dan pengesahan tidak sepadan.');
@@ -188,6 +215,7 @@ final class AuthController extends Controller
         }
 
         $email = trim((string) ($_POST['email'] ?? ''));
+        $this->verifyCaptchaOrFail('forgot_password', 'email', '/forgot-password');
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             set_flash('error', 'Sila masukkan emel yang sah.');
             $_SESSION['old']['email'] = $email;

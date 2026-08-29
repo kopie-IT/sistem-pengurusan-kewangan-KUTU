@@ -47,11 +47,21 @@ $statusTone = static function (string $s): string {
 
 <?= flash_messages() ?>
 
+<?php if (empty($blastTableReady)): ?>
+    <div class="alert alert-warning" role="alert" style="margin-bottom: var(--space-4);">
+        <strong>Jadual <code>email_blasts</code> belum dicipta.</strong>
+        Sejarah email blast tidak boleh dipaparkan. Jalankan
+        <code>database/migrations/005_system_config.sql</code> pada pangkalan
+        data untuk mengaktifkannya.
+    </div>
+<?php endif; ?>
+
 <div class="settings-tabs" role="tablist" aria-label="Bahagian tetapan">
     <a href="#tab-identity"   class="settings-tab is-active" role="tab" aria-selected="true" data-tab="identity">1. Identiti &amp; QR</a>
     <a href="#tab-blaster"    class="settings-tab" role="tab" aria-selected="false" data-tab="blaster">2. Email Blast</a>
     <a href="#tab-wapnet"     class="settings-tab" role="tab" aria-selected="false" data-tab="wapnet">3. wap.net (WhatsApp)</a>
     <a href="#tab-operations" class="settings-tab" role="tab" aria-selected="false" data-tab="operations">4. Operasi &amp; Hubungan</a>
+    <a href="#tab-security"   class="settings-tab" role="tab" aria-selected="false" data-tab="security">5. Keselamatan &amp; CAPTCHA</a>
 </div>
 
 <form method="POST" action="<?= url('/admin/settings') ?>" enctype="multipart/form-data" class="form-grid" novalidate>
@@ -250,6 +260,89 @@ $statusTone = static function (string $s): string {
                     </div>
                 </section>
 
+                <section class="settings-pane" data-pane="security" aria-labelledby="tab-security" hidden>
+                    <h2 class="card-heading" id="tab-security">Keselamatan &amp; CAPTCHA</h2>
+                    <p class="muted">
+                        Aktifkan CAPTCHA untuk halaman sensitif (log masuk, pendaftaran, lupa kata laluan, dan
+                        email blast). Sistem menggunakan math CAPTCHA terbina dalam. Konfigurasi AWS WAF
+                        disimpan untuk integrasi masa depan.
+                    </p>
+
+                    <div class="form-group form-check">
+                        <input type="checkbox" id="captcha_enabled" name="captcha_enabled" value="1"
+                               <?= !empty($systemConfig['captcha_enabled']) ? 'checked' : '' ?>>
+                        <label for="captcha_enabled">Aktifkan CAPTCHA pada halaman sensitif</label>
+                    </div>
+
+                    <h3 class="card-heading" style="font-size:0.95rem; margin-top: var(--space-5);">Per-halaman</h3>
+                    <div class="form-group form-grid form-grid-2">
+                        <label class="form-check">
+                            <input type="checkbox" name="captcha_on_login" value="1"
+                                   <?= !empty($systemConfig['captcha_on_login']) ? 'checked' : '' ?>>
+                            <span>Log masuk</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" name="captcha_on_register" value="1"
+                                   <?= !empty($systemConfig['captcha_on_register']) ? 'checked' : '' ?>>
+                            <span>Daftar akaun</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" name="captcha_on_forgot_password" value="1"
+                                   <?= !empty($systemConfig['captcha_on_forgot_password']) ? 'checked' : '' ?>>
+                            <span>Lupa kata laluan</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" name="captcha_on_reset_password" value="1"
+                                   <?= !empty($systemConfig['captcha_on_reset_password']) ? 'checked' : '' ?>>
+                            <span>Reset kata laluan</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" name="captcha_on_admin_blast" value="1"
+                                   <?= !empty($systemConfig['captcha_on_admin_blast']) ? 'checked' : '' ?>>
+                            <span>Email blast admin</span>
+                        </label>
+                    </div>
+
+                    <h3 class="card-heading" style="font-size:0.95rem; margin-top: var(--space-5);">AWS WAF / Captcha (Pilihan)</h3>
+                    <p class="muted" style="font-size:0.85rem;">
+                        Konfigurasi ini disimpan untuk integrasi AWS WAF Captcha masa depan.
+                        Math CAPTCHA kekal aktif selagi AWS WAF belum diaktifkan di sini.
+                    </p>
+                    <div class="form-group form-grid form-grid-2">
+                        <div>
+                            <label for="aws_waf_api_key" class="form-label">AWS WAF API Key</label>
+                            <input type="password" id="aws_waf_api_key" name="aws_waf_api_key"
+                                   value="<?= e((string) ($systemConfig['aws_waf_api_key'] ?? '')) ?>"
+                                   class="form-control" placeholder="AWS WAF API key" autocomplete="off">
+                        </div>
+                        <div>
+                            <label for="aws_waf_secret_key" class="form-label">AWS WAF Secret</label>
+                            <input type="password" id="aws_waf_secret_key" name="aws_waf_secret_key"
+                                   value="<?= e((string) ($systemConfig['aws_waf_secret_key'] ?? '')) ?>"
+                                   class="form-control" placeholder="AWS WAF Secret" autocomplete="off">
+                        </div>
+                        <div>
+                            <label for="aws_waf_captcha_api" class="form-label">Endpoint CAPTCHA API</label>
+                            <input type="text" id="aws_waf_captcha_api" name="aws_waf_captcha_api"
+                                   value="<?= e((string) ($systemConfig['aws_waf_captcha_api'] ?? 'https://captcha.dev.waf.amazonaws.com/')) ?>"
+                                   class="form-control" placeholder="https://captcha.dev.waf.amazonaws.com/">
+                        </div>
+                        <div>
+                            <label for="aws_waf_captcha_js" class="form-label">JS Integration Script</label>
+                            <input type="text" id="aws_waf_captcha_js" name="aws_waf_captcha_js"
+                                   value="<?= e((string) ($systemConfig['aws_waf_captcha_js'] ?? '')) ?>"
+                                   class="form-control" placeholder="https://...awswafcaptcha.js">
+                        </div>
+                    </div>
+                    <p class="muted" style="font-size:0.8rem; margin-top: var(--space-2);">
+                        <strong>Amaran:</strong> AWS WAF Captcha memerlukan integrasi klien JavaScript
+                        yang melepasi token CAPTCHA ke bahagian pelayan. Math CAPTCHA di atas adalah
+                        lalai yang aktif dan tidak memerlukan perkhidmatan luaran.
+                    </p>
+                </section>
+
+                <?= captcha_field('admin_settings') ?>
+
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Simpan Semua Tetapan</button>
                     <a href="<?= url('/admin') ?>" class="btn btn-ghost">Kembali ke Dashboard</a>
@@ -331,6 +424,8 @@ $statusTone = static function (string $s): string {
                           class="form-control"
                           placeholder="Tulis mesej anda di sini..."></textarea>
             </div>
+
+            <?= captcha_field('admin_blast') ?>
             <div class="form-group form-grid form-grid-2">
                 <div>
                     <label for="blast_target" class="form-label">Sasaran</label>
