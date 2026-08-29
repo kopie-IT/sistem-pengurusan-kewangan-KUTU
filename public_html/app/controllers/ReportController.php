@@ -35,10 +35,11 @@ final class ReportController extends Controller
         $pdo = Database::connection();
         $sql = 'SELECT lt.id, lt.transaction_type, lt.member_id, lt.plan_id, lt.reference_id,
                        lt.amount, lt.currency, lt.description, lt.created_at,
-                       m.full_name AS member_name, m.member_code,
+                       u.name AS member_name, m.member_code,
                        p.name AS plan_name, p.plan_code
                 FROM ledger_transactions lt
                 LEFT JOIN members m ON m.id = lt.member_id
+                LEFT JOIN users u ON u.id = m.user_id
                 LEFT JOIN plans p ON p.id = lt.plan_id
                 WHERE 1=1';
         $params = [];
