@@ -285,17 +285,26 @@ final class PlanService
         $map = [];
 
         for ($cycle = 1; $cycle <= $numberOfCycles; $cycle++) {
+            $start = $this->addInterval(new DateTimeImmutable($startDate), $interval, $cycle - 1);
+            $end   = $this->addInterval($start, $interval, 1)->modify('-1 day');
+            $startFormatted = $start->format('Y-m-d');
+            $endFormatted = $end->format('Y-m-d');
+
             $stmt = $pdo->prepare('SELECT id FROM plan_cycles WHERE plan_id = :plan_id AND cycle_no = :cycle_no LIMIT 1');
             $stmt->execute([':plan_id' => $planId, ':cycle_no' => $cycle]);
             $existing = (int) $stmt->fetchColumn();
 
             if ($existing > 0) {
+                // Ensure existing cycle dates are synchronized with current plan start date and frequency
+                $update = $pdo->prepare('UPDATE plan_cycles SET start_date = :start_date, end_date = :end_date WHERE id = :id');
+                $update->execute([
+                    ':start_date' => $startFormatted,
+                    ':end_date'   => $endFormatted,
+                    ':id'         => $existing,
+                ]);
                 $map[$cycle] = $existing;
                 continue;
             }
-
-            $start = $this->addInterval(new DateTimeImmutable($startDate), $interval, $cycle - 1);
-            $end   = $this->addInterval($start, $interval, 1)->modify('-1 day');
 
             $insert = $pdo->prepare(
                 'INSERT INTO plan_cycles (plan_id, cycle_no, start_date, end_date, status)
@@ -304,8 +313,8 @@ final class PlanService
             $insert->execute([
                 ':plan_id'    => $planId,
                 ':cycle_no'   => $cycle,
-                ':start_date' => $start->format('Y-m-d'),
-                ':end_date'   => $end->format('Y-m-d'),
+                ':start_date' => $startFormatted,
+                ':end_date'   => $endFormatted,
                 ':status'     => 'upcoming',
             ]);
             $map[$cycle] = (int) $pdo->lastInsertId();

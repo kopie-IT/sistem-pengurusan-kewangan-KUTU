@@ -170,10 +170,11 @@ $router->post('/admin/payouts/{id}/generate', [PayoutController::class, 'generat
 $router->post('/admin/payouts/{id}/slip',     [PayoutController::class, 'confirmSlip'], null, $admin);
 
 // Admin settings (system name, tagline, logo) - admin + super_admin only.
-$router->get('/admin/settings',  [AdminSettingsController::class, 'index'], 'admin.settings', $superAdmin);
-$router->post('/admin/settings', [AdminSettingsController::class, 'update'], null, $superAdmin);
-// Email blast send endpoint (admin + super_admin only).
-$router->post('/admin/settings/blast', [AdminSettingsController::class, 'sendBlast'], null, $superAdmin);
+$router->get('/admin/settings',                 [AdminSettingsController::class, 'index'],          'admin.settings', $superAdmin);
+$router->post('/admin/settings',                [AdminSettingsController::class, 'update'],         null,             $superAdmin);
+$router->post('/admin/settings/blast',          [AdminSettingsController::class, 'sendBlast'],      null,             $superAdmin);
+$router->get('/admin/settings/database/export', [AdminSettingsController::class, 'exportDatabase'], 'admin.database.export', $superAdmin);
+$router->post('/admin/settings/database/import',[AdminSettingsController::class, 'importDatabase'], 'admin.database.import', $superAdmin);
 
 // Internal user management (admin / super_admin / staff) — admin + super_admin only.
 $router->get('/admin/users',                 [UserManagementController::class, 'index'],   'admin.users',          $superAdmin);

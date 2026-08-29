@@ -334,8 +334,89 @@ $statusTone = static function (string $s): string {
             <!-- TAB: Database & Integration Inspector -->
             <section class="settings-pane" data-pane="database" aria-labelledby="tab-database" hidden>
                 <div style="margin-bottom: 1.5rem;">
-                    <h2 class="card-heading" id="tab-database" style="margin: 0; font-size: 1.25rem;">Pangkalan Data &amp; Konfigurasi Interasi</h2>
-                    <p class="muted small" style="margin-top: 0.25rem;">Data dipaparkan secara langsung dari pangkalan data MySQL/MariaDB dan jadual <code>system_settings</code> / <code>app_settings</code>.</p>
+                    <h2 class="card-heading" id="tab-database" style="margin: 0; font-size: 1.25rem;">Pangkalan Data &amp; Konfigurasi Integrasi</h2>
+                    <p class="muted small" style="margin-top: 0.25rem;">Eksport sandaran penuh pangkalan data, import semula fail SQL, dan semak inventori jadual sistem.</p>
+                </div>
+
+                <!-- DB Export & Import Action Cards -->
+                <div class="grid grid-2" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+                    <!-- Export Card -->
+                    <div class="card" style="padding: 1.25rem; border: 1px solid #e2e8f0; border-radius: 8px; background: #ffffff; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                <div style="width: 40px; height: 40px; border-radius: 8px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center;">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="7 10 12 15 17 10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 1.05rem; font-weight: 600; color: #0f172a;">Eksport Pangkalan Data (SQL)</h3>
+                                    <p class="muted small" style="margin: 0;">Muat turun salinan sandaran skema &amp; rekod data.</p>
+                                </div>
+                            </div>
+                            <p class="muted small" style="margin-bottom: 1.25rem; line-height: 1.5;">
+                                Menghasilkan fail SQL lengkap mengandungi semua struktur jadual dan data terkini. Fail ini boleh disimpan sebagai sandaran atau digunakan untuk migrasi.
+                            </p>
+                        </div>
+                        <a href="<?= url('/admin/settings/database/export') ?>" class="btn btn-primary" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            <span>Muat Turun Eksport SQL</span>
+                        </a>
+                    </div>
+
+                    <!-- Import Card -->
+                    <div class="card" style="padding: 1.25rem; border: 1px solid #fed7aa; border-radius: 8px; background: #fffaf5; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                <div style="width: 40px; height: 40px; border-radius: 8px; background: #fff7ed; color: #ea580c; display: flex; align-items: center; justify-content: center;">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="17 8 12 3 7 8"/>
+                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 1.05rem; font-weight: 600; color: #9a3412;">Import Pangkalan Data (SQL)</h3>
+                                    <p class="muted small" style="margin: 0; color: #c2410c;">Pulihkan data dari fail sandaran <code>.sql</code></p>
+                                </div>
+                            </div>
+                            <p class="small" style="color: #7c2d12; margin-bottom: 1rem; line-height: 1.5;">
+                                <strong>Amaran Keselamatan:</strong> Memasukkan fail SQL akan mengubah atau menggantikan rekod pangkalan data semasa. Pastikan sandaran telah dibuat terlebih dahulu.
+                            </p>
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('import-db-form-wrapper').style.display = document.getElementById('import-db-form-wrapper').style.display === 'none' ? 'block' : 'none';" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <span>Buka Borang Import SQL</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hidden Collapsible Import Form -->
+                <div id="import-db-form-wrapper" style="display: none; margin-bottom: 2rem; padding: 1.5rem; background: #ffffff; border: 2px dashed #f97316; border-radius: 8px;">
+                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: #9a3412; font-weight: 600;">Muat Naik Fail SQL Untuk Dipulihkan</h3>
+                    <p class="muted small" style="margin-bottom: 1rem;">Pilih fail <code>.sql</code> (saiz maksimum: 25MB). Semua arahan SQL akan dijalankan dalam transaksi selamat.</p>
+                    
+                    <form action="<?= url('/admin/settings/database/import') ?>" method="POST" enctype="multipart/form-data" onsubmit="return confirm('AMARAN: Adakah anda pasti mahu mengimport fail SQL ini ke dalam pangkalan data? Rekod sedia ada mungkin terjejas.');">
+                        <?= csrf_field() ?>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="sql_file" class="form-label" style="font-weight: 600;">Pilih Fail SQL (.sql)</label>
+                            <input type="file" id="sql_file" name="sql_file" accept=".sql,text/plain" required class="form-control" style="padding: 0.5rem;">
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('import-db-form-wrapper').style.display='none';">Batal</button>
+                            <button type="submit" class="btn btn-danger" style="background: #dc2626; color: #fff;">Mulakan Import SQL Sekarang</button>
+                        </div>
+                    </form>
                 </div>
 
                 <?php

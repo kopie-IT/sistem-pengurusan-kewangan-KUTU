@@ -10,6 +10,7 @@ use App\Repositories\CreditScoreRepository;
 use App\Repositories\LedgerRepository;
 use App\Repositories\MemberRepository;
 use App\Repositories\PlanRepository;
+use PDO;
 final class ReportController extends Controller
 {
     public function __construct(

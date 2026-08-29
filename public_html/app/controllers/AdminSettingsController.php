@@ -8,6 +8,7 @@ use App\Core\Controller;
 use App\Repositories\AppSettingRepository;
 use App\Repositories\EmailBlastRepository;
 use App\Services\AuditService;
+use App\Services\DatabaseBackupService;
 use App\Services\EmailBlastService;
 use App\Services\SystemSettingService;
 
@@ -60,6 +61,87 @@ final class AdminSettingsController extends Controller
             'dbTables'          => $dbTables,
             'integrations'      => $integrations,
         ]);
+    }
+
+    /**
+     * Export database to downloadable SQL file.
+     */
+    public function exportDatabase(): void
+    {
+        $backupService = new DatabaseBackupService();
+        $sql = $backupService->exportSql();
+
+        AuditService::log('database.export', (int) ($_SESSION['user_id'] ?? 0), 'system', null, [
+            'bytes' => strlen($sql),
+        ]);
+
+        $filename = 'backup_kutu_' . date('Ymd_His') . '.sql';
+
+        header('Content-Type: application/sql; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . strlen($sql));
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        echo $sql;
+        exit;
+    }
+
+    /**
+     * Import database from uploaded SQL file.
+     */
+    public function importDatabase(): void
+    {
+        $token = (string) ($_POST['csrf_token'] ?? '');
+        if (!hash_equals((string) ($_SESSION['csrf_token'] ?? ''), $token)) {
+            set_flash('error', 'Sesi tidak sah. Sila cuba lagi.');
+            $this->redirect('/admin/settings#tab-database');
+        }
+
+        if (empty($_FILES['sql_file']) || ($_FILES['sql_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            set_flash('error', 'Sila pilih fail SQL yang sah untuk dimuat naik.');
+            $this->redirect('/admin/settings#tab-database');
+        }
+
+        $file = $_FILES['sql_file'];
+        if (!is_uploaded_file($file['tmp_name'])) {
+            set_flash('error', 'Fail muat naik tidak sah.');
+            $this->redirect('/admin/settings#tab-database');
+        }
+
+        // Limit SQL file size to 25MB
+        if ((int) $file['size'] > 25 * 1024 * 1024) {
+            set_flash('error', 'Saiz fail SQL melebihi had maksimum 25 MB.');
+            $this->redirect('/admin/settings#tab-database');
+        }
+
+        $ext = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
+        if ($ext !== 'sql') {
+            set_flash('error', 'Hanya fail berformat .sql dibenarkan untuk proses import.');
+            $this->redirect('/admin/settings#tab-database');
+        }
+
+        $sqlContent = file_get_contents($file['tmp_name']);
+        if ($sqlContent === false || trim($sqlContent) === '') {
+            set_flash('error', 'Gagal membaca kandungan fail SQL.');
+            $this->redirect('/admin/settings#tab-database');
+        }
+
+        $backupService = new DatabaseBackupService();
+        $result = $backupService->importSql($sqlContent);
+
+        if ($result['ok']) {
+            AuditService::log('database.import', (int) ($_SESSION['user_id'] ?? 0), 'system', null, [
+                'file_name' => $file['name'],
+                'queries'   => $result['queriesExecuted'] ?? 0,
+            ]);
+            set_flash('success', sprintf('Pangkalan data berjaya diimport! %d pernyataan SQL dilaksanakan.', $result['queriesExecuted'] ?? 0));
+        } else {
+            set_flash('error', $result['error'] ?? 'Gagal memproses import fail SQL.');
+        }
+
+        $this->redirect('/admin/settings#tab-database');
     }
 
     public function update(): void

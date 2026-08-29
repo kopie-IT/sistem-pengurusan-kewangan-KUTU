@@ -8,6 +8,41 @@ Format mengikut Keep a Changelog.
 
 ## [Unreleased]
 
+### Added - Pangkalan Data Eksport & Import (DB Backup & Restore)
+- Menambah perkhidmatan `DatabaseBackupService` ([DatabaseBackupService.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/services/DatabaseBackupService.php)) untuk menjana fail dump SQL penuh secara automatik dan mengimport fail SQL melalui transaksi selamat dengan semakan kekangan kunci asing (`FOREIGN_KEY_CHECKS`).
+- Menambah endpoint `/admin/settings/database/export` (muat turun fail `.sql`) dan `/admin/settings/database/import` (muat naik dan pulihkan pangkalan data) dalam [AdminSettingsController.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/controllers/AdminSettingsController.php) dan [web.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/routes/web.php).
+- Menambah kad antaramuka pengguna (UI) Eksport dan Import SQL di bawah tab Pangkalan Data dalam kategori **Sistem** ([settings.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/admin/settings.php)).
+- Menambah rekod jejak audit keselamatan (`AuditService`) untuk aktiviti muat turun dan pemulihan pangkalan data.
+
+### Fixed - Penyelarasan Tarikh Mula & Tarikh Tamat Kitaran Pelan
+- Mengemaskini `PlanService::ensurePlanCycles` ([PlanService.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/services/PlanService.php)) untuk mengira dan menyelaraskan `start_date` dan `end_date` bagi setiap kitaran secara seragam merentasi semua ahli pelan.
+
+### Changed - Financial Report Table Layout
+- Ruangan `Jenis` disatukan ke dalam ruangan `Pelan` dalam [financial.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/reports/financial.php) menggunakan lencana badge jenis transaksi bersebelahan nama pelan.
+
+### Improved - Equal Height Cards on /plans
+- Ditambah kelas susun atur `.plan-card`, `.plan-card-body`, dan `.plan-card-footer` berasaskan Flexbox dalam [components.css](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/public/assets/css/components.css) dan dikemaskini [plans/index.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/plans/index.php) agar setiap kad pelan mempunyai saiz dan ketinggian yang sama dan selari dengan kedudukan butang tindakan di bahagian bawah.
+
+### Improved - Action Icon Buttons Sizing & Clarity
+- Saiz butang `.btn-icon` ditingkatkan kepada `2.35rem` / `2.15rem` (sm) dan saiz ikon SVG dibesarkan kepada `1.25rem` / `1.15rem` dengan ketebalan strok (`stroke-width: 2`) untuk memastikan kejelasan visual ikon dalam setiap ruangan tindakan jadual.
+
+### Improved - Action Columns Converted to Icon Buttons
+- Ditambah gaya utiliti `.btn-icon`, `.btn-icon.btn-sm`, `.table-actions`, dan `.btn-danger-ghost` dalam [app.css](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/public/assets/css/app.css).
+- Ditukar semua pautan dan butang tindakan dalam ruangan jadual (action columns) kepada butang ikon moden dengan `title` tooltip dan atribut kebolehcapaian `aria-label`:
+  - **Pengurusan Pengguna** ([index.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/admin/users/index.php)): Sunting, Reset Kata Laluan, Padam Pengguna.
+  - **Pengurusan Pelan** ([admin_index.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/plans/admin_index.php)): Lihat Pelan, Lihat Jadual, Sunting Pelan, Jana Jadual.
+  - **Pengurusan Ahli** ([index.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/members/index.php)): Lihat Butiran Ahli.
+  - **Skor Kredit Pentadbir** ([admin_index.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/credit_score/admin_index.php)): Lihat Sejarah Skor Kredit.
+  - **Pengesahan Bayaran** ([queue.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/verification/queue.php)): Lihat Slip & Sahkan/Butiran.
+  - **Jadual Payout** ([admin_index.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/payouts/admin_index.php)): Jana Payout.
+  - **Pengeluaran Ahli (Admin)** ([admin_index.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/withdrawals/admin_index.php)): Butang Hantar Keputusan.
+  - **Kekurangan / Shortfall** ([index.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/shortfalls/index.php)): Butang Selesai.
+  - **Caruman Tertunggak Ahli** ([index.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/payments/index.php)): Butang Bayar.
+  - **Jadual Payout Ahli** ([member_view.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/payouts/member_view.php)): Lihat Slip.
+
+### Fixed - Namespace Import PDO in ReportController
+- Import `use PDO;` dalam [ReportController.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/controllers/ReportController.php) untuk mengelakkan ralat `Class "App\Controllers\PDO" not found`.
+
 ### Fixed & Improved - UI/UX Refinements
 - **Avatar Dropdown Indicator**: Ditambah ikon panah ke bawah (chevron dropdown icon) di sebelah avatar pengguna dalam topbar header ([main.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/layouts/main.php)).
 - **Kad KPI `/admin/payouts`**: Kad statistik disusun dengan tinggi dan lebar seragam serta reka bentuk responsif grid dengan sempadan warna status (`primary`, `success`, `warning`, `danger`) ([admin_index.php](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/app/views/payouts/admin_index.php)).
