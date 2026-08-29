@@ -120,7 +120,6 @@ $netBalance   = $totalIn - $totalOut;
     <table class="table">
         <thead>
             <tr>
-                <th>Jenis</th>
                 <th>Ahli</th>
                 <th>Pelan</th>
                 <th style="text-align:right;">Amaun</th>
@@ -130,11 +129,10 @@ $netBalance   = $totalIn - $totalOut;
         </thead>
         <tbody>
             <?php if (empty($ledger)): ?>
-                <tr><td colspan="6" class="empty-state">Tiada rekod transaksi.</td></tr>
+                <tr><td colspan="5" class="empty-state">Tiada rekod transaksi.</td></tr>
             <?php else: ?>
                 <?php foreach ($ledger as $l): ?>
                     <tr>
-                        <td><span class="badge badge-<?= $typeBadge($l->transaction_type ?? null) ?>"><?= e(ucfirst(str_replace('_', ' ', $l->transaction_type ?? '-'))) ?></span></td>
                         <td>
                             <?php if (!empty($l->member_name)): ?>
                                 <div style="font-weight: 600;"><?= e($l->member_name) ?></div>
@@ -146,12 +144,15 @@ $netBalance   = $totalIn - $totalOut;
                             <?php endif; ?>
                         </td>
                         <td>
-                            <?php if (!empty($l->plan_name)): ?>
-                                <div style="font-weight: 600;"><?= e($l->plan_name) ?></div>
-                                <?php if (!empty($l->plan_code)): ?>
-                                    <div class="muted small"><?= e($l->plan_code) ?></div>
+                            <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                <span class="badge badge-<?= $typeBadge($l->transaction_type ?? null) ?>"><?= e(ucfirst(str_replace('_', ' ', $l->transaction_type ?? '-'))) ?></span>
+                                <?php if (!empty($l->plan_name)): ?>
+                                    <span style="font-weight: 600;"><?= e($l->plan_name) ?></span>
                                 <?php endif; ?>
-                            <?php else: ?>
+                            </div>
+                            <?php if (!empty($l->plan_code)): ?>
+                                <div class="muted small" style="margin-top: 0.2rem;"><?= e($l->plan_code) ?></div>
+                            <?php elseif (empty($l->plan_name)): ?>
                                 <span class="muted small">-</span>
                             <?php endif; ?>
                         </td>
