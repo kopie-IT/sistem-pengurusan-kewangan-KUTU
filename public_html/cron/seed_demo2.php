@@ -171,9 +171,11 @@ foreach ($extraPeople as $p) {
 // 2. Pull ALL existing members (we want new plans to include all of them).
 // ---------------------------------------------------------------------------
 $allMemberIds = [];
-$rows = $pdo->query(
+$stmtAllMembers = $pdo->prepare(
     'SELECT m.id FROM members m INNER JOIN users u ON u.id = m.user_id WHERE m.status = :s ORDER BY m.id ASC'
-)->fetchAll(\PDO::FETCH_ASSOC);
+);
+$stmtAllMembers->execute([':s' => 'active']);
+$rows = $stmtAllMembers->fetchAll(\PDO::FETCH_ASSOC);
 foreach ($rows as $r) {
     $allMemberIds[] = (int) $r['id'];
 }

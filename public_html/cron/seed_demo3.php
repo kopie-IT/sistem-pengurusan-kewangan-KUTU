@@ -594,6 +594,7 @@ if ($memberKeys !== [] && $planKeys !== []) {
                 'member_id'     => $allMembers[$memberKeys[$i % count($memberKeys)]]['member_id'],
                 'plan_id'       => $allPlans[$planKeys[$i % count($planKeys)]]->id,
                 'reason'        => $s['reason'],
+                'request_date'  => date('Y-m-d H:i:s', strtotime('-' . (15 - $i * 3) . ' days')),
                 'current_cycle' => 3,
                 'outstanding'   => '0.00',
                 'score_impact'  => -10,

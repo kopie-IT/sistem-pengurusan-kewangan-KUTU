@@ -133,15 +133,16 @@ final class PayoutRepository
         $sql = 'UPDATE payouts
                 SET status = :status,
                     paid_by = :paid_by,
-                    paid_date = IF(:paid_date IS NOT NULL, :paid_date, paid_date),
+                    paid_date = IF(:paid_date_check IS NOT NULL, :paid_date_value, paid_date),
                     updated_at = NOW()
                 WHERE id = :id';
         $stmt = Database::connection()->prepare($sql);
         $stmt->execute([
-            ':status'   => $status,
-            ':paid_by'  => $paidBy,
-            ':paid_date' => $paidDate,
-            ':id'       => $id,
+            ':status'          => $status,
+            ':paid_by'         => $paidBy,
+            ':paid_date_check' => $paidDate,
+            ':paid_date_value' => $paidDate,
+            ':id'              => $id,
         ]);
     }
 
