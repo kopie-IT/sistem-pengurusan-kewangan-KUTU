@@ -8,6 +8,9 @@ Format mengikut Keep a Changelog.
 
 ## [Unreleased]
 
+### Changed - Sidebar Skor Kredit Menu Position
+- Menu **Skor Kredit** kini diletakkan terus di bawah **Dashboard** (pentadbir di `/admin/credit-scores`) dan **Papan Pemuka** (ahli di `/credit-score`) dalam kumpulan menu pertama sidebar, bukan lagi di bahagian bawah atau dalam kumpulan Akaun.
+
 ### Fixed - SQL error `email_blasts table doesn't exist` on fresh install
 - `EmailBlastRepository::all()` dan `count()` kini defensif: jika jadual
   belum dicipta, `all()` pulangkan senarai kosong dan `count()` pulangkan

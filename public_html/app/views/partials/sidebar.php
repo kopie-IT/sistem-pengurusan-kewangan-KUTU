@@ -64,7 +64,8 @@ if ($isAdmin) {
         [
             'label' => null,
             'items' => [
-                ['label' => 'Dashboard', 'url' => '/admin', 'icon' => 'dashboard'],
+                ['label' => 'Dashboard',   'url' => '/admin',               'icon' => 'dashboard'],
+                ['label' => 'Skor Kredit', 'url' => '/admin/credit-scores', 'icon' => 'credit'],
             ],
         ],
         [
@@ -91,12 +92,6 @@ if ($isAdmin) {
                 ['label' => 'Ahli', 'url' => '/admin/reports/members', 'icon' => 'members'],
             ],
         ],
-        [
-            'label' => null,
-            'items' => [
-                ['label' => 'Skor Kredit', 'url' => '/admin/credit-scores', 'icon' => 'credit'],
-            ],
-        ],
     ];
 
     // Sistem > Tetapan & Urus Pengguna hanya untuk admin / super_admin (bukan staff).
@@ -115,7 +110,8 @@ if ($isAdmin) {
         [
             'label' => null,
             'items' => [
-                ['label' => 'Papan Pemuka', 'url' => '/dashboard', 'icon' => 'dashboard'],
+                ['label' => 'Papan Pemuka', 'url' => '/dashboard',    'icon' => 'dashboard'],
+                ['label' => 'Skor Kredit',  'url' => '/credit-score', 'icon' => 'credit'],
             ],
         ],
         [
@@ -147,7 +143,6 @@ if ($isAdmin) {
         [
             'label' => 'Akaun',
             'items' => [
-                ['label' => 'Skor Kredit', 'url' => '/credit-score', 'icon' => 'credit'],
                 ['label' => 'Pengeluaran', 'url' => '/withdrawals', 'icon' => 'withdrawals'],
                 ['label' => 'Profil', 'url' => '/profile', 'icon' => 'members'],
                 ['label' => 'Makluman', 'url' => '/notifications', 'icon' => 'score'],
