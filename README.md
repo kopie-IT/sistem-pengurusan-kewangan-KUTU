@@ -1,11 +1,26 @@
 # Sistem Pengurusan Main Kutu
 
-Aplikasi web untuk mengurus Plan Main Kutu secara digital.
+Aplikasi web untuk mengurus pelan Main Kutu secara digital — pembayaran, payout, jadual kitaran, pengesahan resit, skor kredit, dan laporan kewangan.
 
-- Vanilla PHP 8.2+
-- MySQL/MariaDB
-- Apache
-- cPanel compatible
+- **Stack:** Vanilla PHP 8.1+, MySQL / MariaDB, Apache
+- **Frontend:** Tailwind CSS, Inter font, vanilla JS
+- **Hosting:** cPanel / shared hosting compatible
+- **Locale:** Bahasa Melayu (ms)
+
+---
+
+## Ciri Utama
+
+- Pengurusan pelan (fixed / progressive / multiplier payout mode)
+- Keahlian, jadual kitaran, jadual sumbangan & payout
+- Bayaran perseorangan & pukal dengan muat naik resit
+- Pengesahan bayaran, lejar (ledger), skor kredit automatik
+- Payout, caj pentadbir, withdrawal, shortfall
+- Kalendar, notifikasi, laporan kewangan
+- Sandaran & pulihkan pangkalan data (Super Admin sahaja)
+- Pengesahan CAPTCHA, dasar kunci akaun, audit log
+
+---
 
 ## Struktur Projek
 
@@ -13,136 +28,195 @@ Aplikasi web untuk mengurus Plan Main Kutu secara digital.
 public_html/
     app/
         config/         # Konfigurasi
-        controllers/    # Controller
-        core/           # Database, Router, Controller, View
+        controllers/    # Controller (HTTP layer)
+        core/           # Database, Router, Container, View
         helpers/        # Helper functions
-        middleware/     # Authorization middleware
-        models/         # Model
-        repositories/   # Repository
-        routes/         # Route definitions
+        middleware/     # Authenticate, Authorize, ForcePasswordReset
+        models/         # Eloquent-style data models
+        repositories/   # SQL repositories (parameterized queries)
+        routes/         # web.php route table
         services/       # Business logic services
-        validators/     # Input validators
-        views/          # View templates
+        views/          # View templates (PHP)
+    cron/               # Skrip CLI (migrate, seed, daily)
     database/
-        migrations/     # SQL migrations
-        seeders/        # Data seeders
-    public/
-        assets/         # CSS, JS, images
-    storage/
-        logs/           # Application logs
-        uploads/        # Secure uploads
-    tests/              # Tests
-    cron/               # Cron scripts
+        migrations/     # *.sql files (idempotent via migrations table)
+        seeders/        # *.sql files
+    public/             # Apache document root (front controller)
+    storage/            # logs/, uploads/  (gitignored, created at runtime)
+    install.php         # Wizard pemasangan cPanel (lihat di bawah)
+    install-cli.php     # Wizard pemasangan CLI
 ```
 
-## Default Credentials (Seeded)
+---
 
-Selepas migration dan seeder dijalankan, akaun berikut akan dicipta:
+## Pemasangan (cPanel / Shared Hosting)
 
-| Role  | Emel                  | Kata Laluan       | Status       |
-|-------|-----------------------|-------------------|--------------|
-| Admin | `admin@mainkutu.local`  | `Admin@12345`     | First-time login (wajib reset) |
-| Member | `member@mainkutu.local`| `Member@12345`    | First-time login (wajib reset) |
-| Member (Demo) | `ahmad@mainkutu.local` | `Ahmad@12345` | Demo plan + schedules |
+### Wizard Web (disyorkan)
 
-> **PENTING:** Untuk persekitaran production, tukar kata laluan ini SEGERA selepas login pertama dan/atau padamkan seeder.
+1. Muat naik projek ke `public_html/` di akaun cPanel anda.
+2. Tetapkan *document root* domain ke subfolder `public_html/public/`.
+3. Cipta pangkalan data + pengguna MySQL di *cPanel → MySQL® Databases*.
+4. Layari `https://yourdomain.com/install.php` dan ikut 4 langkah:
+   - Sambutan (semakan keperluan)
+   - Konfigurasi pangkalan data & aplikasi
+   - Sahkan + tetapkan akaun **Super Admin**
+   - Selesai
+5. **Padam** `install.php` dan `install-cli.php` dari server selepas siap.
 
-Akaun demo (`ahmad@mainkutu.local`) dicipta oleh `cron/seed_demo.php` dengan pelan demo PLN-DEMO01 (RM200 x 5 kitaran) supaya aliran bayaran boleh diuji serta-merta.
+Wizard akan:
+- Menguji sambungan MySQL.
+- Menulis `.env` (chmod 0600) dengan nilai yang dipilih.
+- Menjalankan semua migration (`database/migrations/*.sql`).
+- Menjalankan semua seeder (`database/seeders/*.sql`).
+- Menjana data demo pilihan (2 pelan contoh).
+- Mencipta / mengemas kini akaun Super Admin.
+- Menulis `storage/installed.lock` untuk mengelakkan pasang semula tanpa sengaja.
 
-### Reset Password Flow
+### Wizard CLI (SSH)
 
-The system enforces a password reset in two scenarios:
+```bash
+php install-cli.php \
+  --db-host=localhost --db-port=3306 \
+  --db-name=kutu_main --db-user=kutu_user --db-pass='secret' \
+  --app-url=https://kutu.example.com \
+  --admin-name='Admin' --admin-email=admin@example.com \
+  --admin-password='Secret123!' \
+  --seed-demo
+```
 
-1. **First-time login** - Akaun yang baru dicipta akan ada flag `must_reset_password = true`. Selepas login, pengguna akan di-redirect ke halaman `/reset-password` untuk menukar kata laluan.
-2. **Admin-triggered reset** - Admin boleh reset kata laluan ahli melalui panel admin. Sistem akan jana kata laluan sementara dan hantar token reset ke emel ahli (atau paparkan sekali sahaja untuk admin).
+Pilihan berguna: `--force`, `--no-seed`, `--no-admin`, `--app-env=local`.
 
-Selepas berjaya reset, flag `must_reset_password` akan dipadamkan dan password akan di-hash semula.
+### Manual (tanpa wizard)
 
-## Docker Desktop
+```bash
+cp public_html/.env.example public_html/.env
+# Edit .env: DB_*, APP_URL, SESSION_*
+php public_html/cron/migrate.php
+php public_html/cron/seed.php
+```
+
+---
+
+## Akaun Lalai (Seeder)
+
+Selepas `cron/seed.php` dijalankan, dua akaun demo dicipta dengan `must_reset_password = 1`:
+
+| Emel | Peranan |
+|------|---------|
+| `admin@mainkutu.local` | Admin |
+| `member@mainkutu.local` | Member |
+
+> **Kata laluan dijana secara rawak** pada setiap seed dan disimpan sekali di
+> `storage/logs/seed-credentials-<timestamp>-<rand>.log` (chmod 0600, di luar
+> repo). Sebaik sahaja pengguna melengkapkan reset paksa pada log masuk
+> pertama, kata laluan ini tidak lagi sah.
+>
+> Untuk persekitaran production, gunakan wizard pemasangan untuk mencipta
+> akaun Super Admin dengan emel & kata laluan anda sendiri — seeder demo
+> tidak diperlukan.
+
+### Reset Kata Laluan
+
+Sistem menguatkuasakan reset kata laluan dalam dua senario:
+
+1. **Log masuk pertama** — Akaun yang baru dicipta akan ada `must_reset_password = 1`. Selepas login, pengguna di-redirect ke `/reset-password`.
+2. **Reset oleh Admin** — Admin boleh reset kata laluan ahli melalui panel. Sistem menjana kata laluan sementara dan/atau menghantar token reset.
+
+Selepas berjaya reset, flag `must_reset_password` dipadamkan dan kata laluan di-hash semula dengan bcrypt (cost ≥ 10).
+
+---
+
+## Docker Desktop (Pembangunan)
 
 ### Keperluan
 
-- Docker Desktop untuk Windows
+- Docker Desktop untuk Windows / Mac / Linux
 - Docker Compose (sudah termasuk dalam Docker Desktop)
 
 ### Arahan
 
-1. Buka PowerShell atau Command Prompt dalam folder projek.
-2. Bina dan jalankan container:
-
 ```powershell
 docker-compose up --build -d
-```
-
-3. Tunggu 10-15 saat untuk MySQL bersedia.
-4. Jalankan migration dan seeder:
-
-```powershell
 docker exec mainkutu_app php /var/www/html/cron/migrate.php
 docker exec mainkutu_app php /var/www/html/cron/seed.php
 ```
 
-5. Akses aplikasi:
+- Aplikasi: `http://localhost:8090`
+- phpMyAdmin: `http://localhost:8091` (user `root` / pass `root_password`)
 
-```
-http://localhost:8090
-```
-
-6. Akses phpMyAdmin:
-
-```
-http://localhost:8091
-```
-
-Credentials phpMyAdmin:
-- Server: db
-- Username: root
-- Password: root_password
-
-Atau:
-- Username: mainkutu
-- Password: mainkutu_password
-
-### Hentikan Container
+Hentikan:
 
 ```powershell
-docker-compose down
+docker-compose down          # kekalkan data
+docker-compose down -v       # padam data + volume
 ```
 
-### Hentikan dan Padam Data
-
-```powershell
-docker-compose down -v
-```
+---
 
 ## Konfigurasi
 
-1. Salin `.env.example` ke `.env`.
-2. Kemas kini nilai mengikut persekitaran anda.
+Salin `.env.example` ke `.env` dan kemas kini nilai mengikut persekitaran:
 
-```powershell
+```bash
 cp public_html/.env.example public_html/.env
 ```
 
-## Development Status
+Kunci penting:
 
-Fasa 1: Project Foundation - Selesai.
-Fasa 2: Authentication & Password Reset - Selesai.
-Fasa 3: Pelan Kutu & Keahlian (Plan CRUD, join, schedules) - Selesai.
-Fasa 4: Bayaran & Pengesahan (single, bulk, verification, ledger, credit score) - Selesai.
-Fasa 5: Payout, Admin Fee, Withdrawal, Shortfall, Laporan, Kalendar, Notifikasi - Selesai.
+| Pembolehubah | Tujuan |
+|--------------|--------|
+| `APP_ENV` | `production` atau `local` |
+| `APP_URL` | URL asas aplikasi (digunakan untuk redirect) |
+| `DB_*` | Hos, port, nama DB, pengguna, kata laluan, charset |
+| `SESSION_SECURE` | `true` jika HTTPS, `false` jika HTTP |
+| `MAX_UPLOAD_SIZE_MB` | Had saiz muat naik resit |
+| `AUTH_MAX_FAILED_ATTEMPTS` / `AUTH_LOCKOUT_SECONDS` | Had percubaan log masuk & tempoh kunci |
+| `CURRENCY` / `CURRENCY_SYMBOL` | Paparan mata wang |
 
-Semua modul P0-P2 dalam `docs/PRD.md` telah dilaksana.
+---
 
-Lihat `docs/IMPLEMENTATION-PLAN.md` untuk butiran fasa.
+## Keselamatan
+
+- **Prepared statements** melalui PDO untuk semua query (tiada concatenation SQL).
+- **bcrypt** untuk hash kata laluan (cost 10).
+- **CSRF token** untuk semua bentuk POST.
+- **Session hardening** — HttpOnly, SameSite, Secure (apabila HTTPS), `use_strict_mode`.
+- **Captcha** boleh didayakan dalam tetapan sistem.
+- **Rate limiting / lockout** untuk log masuk gagal.
+- **Audit log** untuk tindakan sensitif (reset, import, export, pengubahsuaian peranan).
+- **Super admin gating** untuk tindakan merosakkan (reset pangkalan data, import, export).
+- **.htaccess** menyekat akses terus ke `.env`, `install*.php`, `composer.*`, `README.md`.
+- **OPcache** sangat disyorkan pada production — aktifkan `opcache.enable=1`, `opcache.jit=tracing`.
+
+---
+
+## Prestasi
+
+Disyorkan untuk production:
+
+```ini
+# php.ini
+opcache.enable=1
+opcache.memory_consumption=128
+opcache.max_accelerated_files=10000
+opcache.jit=tracing
+opcache.jit_buffer_size=64M
+```
+
+Apache modules didayakan: `mod_rewrite`, `mod_deflate`, `mod_expires`, `mod_headers`.
+
+Migration [008_perf_indexes.sql](file:///c:/Users/home/Documents/Github-project/Sistem_Main_Kutu/public_html/database/migrations/008_perf_indexes.sql) menambah indeks untuk lajur yang kerap ditapis (`app_settings.key`, `users.email`, `payments.member_id`, dsb.).
+
+---
 
 ## Cron Jobs
 
 | Skrip | Tujuan | Cadangan Jadual |
 |-------|--------|-----------------|
-| `cron/daily.php` | Tanda jadual tertunggak, notifikasi bayaran, skor kredit lewat/gagal, flag payout due | Harian (00:05) |
+| `cron/daily.php` | Tanda jadual tertunggak, notifikasi, skor kredit, flag payout due | Harian (00:05) |
 | `cron/migrate.php` | Jalankan SQL migrations yang belum dilaksana | Manual / deploy |
-| `cron/seed.php` | Reset akaun admin/member kepada default | Manual sahaja |
+| `cron/seed.php` | Jana akaun demo dengan kata laluan rawak | Manual sahaja |
+| `install-cli.php` | Wizard pemasangan CLI | Sekali / persekitaran baru |
 
 Contoh crontab:
 
@@ -150,8 +224,26 @@ Contoh crontab:
 5 0 * * * php /var/www/html/cron/daily.php >> /var/www/html/storage/logs/cron.log 2>&1
 ```
 
-Dalam Docker, boleh ujian secara manual:
+Ujian manual dalam Docker:
 
 ```powershell
 docker exec mainkutu_app php /var/www/html/cron/daily.php
 ```
+
+---
+
+## Status Pembangunan
+
+Fasa 1 — Project Foundation ✅
+Fasa 2 — Authentication & Password Reset ✅
+Fasa 3 — Pelan Kutu & Keahlian ✅
+Fasa 4 — Bayaran & Pengesahan ✅
+Fasa 5 — Payout, Admin Fee, Withdrawal, Shortfall, Laporan, Kalendar, Notifikasi ✅
+Fasa 6 — Sandaran & Pulihkan Pangkalan Data ✅
+Fasa 7 — Wizard Pemasangan cPanel ✅
+
+---
+
+## Lesen
+
+Proprietari. Hak cipta terpelihara.
