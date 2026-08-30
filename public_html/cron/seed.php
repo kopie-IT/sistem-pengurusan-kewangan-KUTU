@@ -57,18 +57,21 @@ foreach ($sqlFiles as $file) {
     }
 }
 
-// Default credentials
+// Default demo accounts.
+// Plaintext credentials are NOT stored in this repo. Each password is a strong
+// random string generated at seed time, written once to a private credentials
+// log file under storage/logs/ (gitignored), and never printed to stdout.
 $defaultUsers = [
     [
         'name'     => 'Administrator',
         'email'    => 'admin@mainkutu.local',
-        'password' => 'Admin@12345',
+        'password' => bin2hex(random_bytes(12)), // 24 chars
         'role'     => 'admin',
     ],
     [
         'name'     => 'Member Demo',
         'email'    => 'member@mainkutu.local',
-        'password' => 'Member@12345',
+        'password' => bin2hex(random_bytes(12)), // 24 chars
         'role'     => 'member',
     ],
 ];
@@ -110,7 +113,28 @@ foreach ($defaultUsers as $u) {
 }
 
 echo PHP_EOL . "Seeding complete. Inserted: $inserted, Updated: $updated." . PHP_EOL;
-echo PHP_EOL . "Default credentials:" . PHP_EOL;
-foreach ($defaultUsers as $u) {
-    echo "  - {$u['email']} / {$u['password']}  (must reset on first login)" . PHP_EOL;
+
+// Persist freshly generated credentials to a private log file so the operator
+// can retrieve them once. The file is written with mode 0600 and lives under
+// the gitignored storage/logs/ directory. It is NEVER printed to stdout.
+$logDir = __DIR__ . '/../storage/logs';
+if (!is_dir($logDir)) {
+    @mkdir($logDir, 0775, true);
 }
+$credFile = $logDir . '/seed-credentials-' . date('Ymd-His') . '-' . bin2hex(random_bytes(4)) . '.log';
+$credHandle = @fopen($credFile, 'w');
+if ($credHandle) {
+    @chmod($credFile, 0600);
+    fwrite($credHandle, "Generated seed credentials (" . date('c') . ")\n" . str_repeat('-', 60) . "\n");
+    foreach ($defaultUsers as $u) {
+        fwrite($credHandle, "{$u['email']} | {$u['password']} | role={$u['role']} | must_reset=1\n");
+    }
+    fwrite($credHandle, str_repeat('-', 60) . "\n");
+    fwrite($credHandle, "These passwords are randomly generated and only valid until the user\n");
+    fwrite($credHandle, "completes the forced password reset on first login.\n");
+    fclose($credHandle);
+    echo PHP_EOL . "Credentials written to (chmod 0600): " . $credFile . PHP_EOL;
+} else {
+    echo PHP_EOL . "[WARN] Could not write credentials file under storage/logs/." . PHP_EOL;
+}
+echo PHP_EOL . "Note: plaintext credentials are not echoed to stdout by design." . PHP_EOL;

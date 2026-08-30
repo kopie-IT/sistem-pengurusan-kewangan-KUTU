@@ -1,12 +1,17 @@
 -- ============================================================================
 -- Seeder 001: Default Admin and Member Users
--- Passwords are seeded as bcrypt hashes; plaintext is shown in README.md.
 --
--- Admin:   admin@mainkutu.local  /  Admin@12345
--- Member:  member@mainkutu.local /  Member@12345
+-- Demo accounts are created by cron/seed.php at seed time using bcrypt-hashed
+-- passwords. Plaintext credentials are intentionally NOT stored in this repo.
+--
+-- Default accounts (created on first install via the web installer or CLI):
+--   - admin@mainkutu.local   (role: admin)
+--   - member@mainkutu.local  (role: member)
 --
 -- IMPORTANT: Both accounts have must_reset_password = 1, so on first login
 -- the user is forced to change their password before accessing the system.
+-- The installer (install.php) also lets the operator create a real Super
+-- Admin account with their own email + password.
 -- ============================================================================
 
 SET NAMES utf8mb4;

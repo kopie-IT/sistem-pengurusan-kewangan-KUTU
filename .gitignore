@@ -24,3 +24,15 @@ Thumbs.db
 
 # Docker volumes / build artifacts
 *.sqlite
+
+# Local documentation / planning artifacts (not part of the runtime app)
+/docs/
+public_html/INSTALL.md
+
+# Installer & sensitive runtime files
+public_html/install.php
+public_html/install-cli.php
+public_html/storage/installed.lock
+
+# Local env files copied into web root for cPanel first-deploy
+public_html/.htaccess.bak
