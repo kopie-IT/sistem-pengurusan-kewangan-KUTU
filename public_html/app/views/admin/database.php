@@ -1,5 +1,6 @@
 <?php
 /** @var array $dbTables */
+/** @var bool  $canManageDatabase */
 $totalTables = count($dbTables ?? []);
 ?>
 <section class="section" style="padding-top: 2.5rem;">
@@ -20,6 +21,20 @@ $totalTables = count($dbTables ?? []);
             </div>
         </div>
 
+        <?php if (empty($canManageDatabase)): ?>
+            <div class="alert alert-warning" role="alert" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.25rem; background: #fff7ed; border-left: 4px solid #f59e0b; border-radius: 8px; color: #7c2d12; margin-bottom: 1.5rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <div>
+                    <strong>Hanya Super Admin boleh mengurus pangkalan data.</strong><br>
+                    <span class="small">Eksport, import, dan reset data dihadkan kepada akaun Super Admin sahaja. Anda boleh melihat inventori jadual di bawah.</span>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <!-- Stat Card: Inventory -->
         <div class="grid grid-3" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
             <div class="card" style="padding: 1.25rem; border-left: 4px solid var(--primary, #3b82f6); background: var(--bg-surface, #fff);">
@@ -39,7 +54,8 @@ $totalTables = count($dbTables ?? []);
             </div>
         </div>
 
-        <!-- Export & Import Action Cards -->
+        <!-- Export & Import Action Cards (Super Admin only) -->
+        <?php if (!empty($canManageDatabase)): ?>
         <div class="grid grid-2" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; align-items: stretch;">
             <!-- Export Card -->
             <div class="card" style="padding: 1.75rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; display: flex; flex-direction: column; box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));">
@@ -127,8 +143,10 @@ $totalTables = count($dbTables ?? []);
                 </form>
             </div>
         </div>
+        <?php endif; ?>
 
-        <!-- Reset Data Card (Danger Zone) -->
+        <!-- Reset Data Card (Danger Zone) — Super Admin only -->
+        <?php if (!empty($canManageDatabase)): ?>
         <div class="card" style="padding: 1.5rem 1.75rem; border: 2px solid #fecaca; border-radius: 12px; background: #fef2f2; margin-bottom: 2rem;">
             <div style="display: flex; align-items: flex-start; gap: 1rem;">
                 <div style="width: 52px; height: 52px; border-radius: 10px; background: #fee2e2; color: #b91c1c; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -143,7 +161,7 @@ $totalTables = count($dbTables ?? []);
                     <p class="muted" style="margin-top: 0.35rem; line-height: 1.6; color: #7f1d1d;">
                         Tindakan ini akan <strong>mengosongkan semua rekod</strong> dalam pangkalan data termasuk ahli, pelan, jadual, caruman, payout, transaksi, dan lain-lain.
                         <br>
-                        <strong>Dipelihara:</strong> Akaun pentadbir &amp; staf (jadual <code>users</code>, <code>roles</code>, <code>user_roles</code>, <code>sessions</code>, <code>password_resets</code>) supaya anda boleh log masuk semula selepas reset.
+                        <strong>Dipelihara:</strong> Tetapan sistem (jadual <code>app_settings</code>, <code>system_settings</code>, <code>admin_fee_configs</code>, <code>admin_fee_versions</code>) dan akaun <strong>admin / super admin</strong> sahaja supaya anda boleh log masuk semula selepas reset. Akaun ahli, staf, dan pengguna lain akan dipadamkan.
                     </p>
                     <button type="button" class="btn btn-danger" onclick="document.getElementById('resetDataModal').style.display = 'flex';" style="background: #dc2626; color: #fff; border: 0; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1.2rem; font-weight: 600;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -158,6 +176,7 @@ $totalTables = count($dbTables ?? []);
                 </div>
             </div>
         </div>
+        <?php endif; ?>
 
         <!-- Database Inventory -->
         <?php if (!empty($dbTables)): ?>
@@ -191,7 +210,8 @@ $totalTables = count($dbTables ?? []);
     </div>
 </section>
 
-<!-- Reset Data Confirmation Modal -->
+<!-- Reset Data Confirmation Modal (Super Admin only) -->
+<?php if (!empty($canManageDatabase)): ?>
 <div id="resetDataModal" role="dialog" aria-modal="true" aria-labelledby="resetDataModalTitle" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(4px);">
     <div style="background: #ffffff; max-width: 520px; width: 100%; border-radius: 14px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4); overflow: hidden; animation: modalPop 200ms ease-out;">
         <div style="padding: 1.5rem 1.75rem; background: linear-gradient(135deg, #dc2626, #991b1b); color: #fff; display: flex; align-items: center; gap: 0.85rem;">
@@ -214,7 +234,7 @@ $totalTables = count($dbTables ?? []);
             </div>
 
             <ul style="margin: 0 0 1.25rem 0; padding-left: 1.25rem; line-height: 1.7; color: #475569;">
-                <li>Hanya akaun pentadbir &amp; staf akan dipelihara (<code>users</code>, <code>roles</code>, <code>sessions</code>).</li>
+                <li>Hanya akaun <strong>admin / super admin</strong> dan tetapan sistem akan dipelihara. Akaun ahli, staf, dan pengguna lain akan dipadamkan.</li>
                 <li>Tindakan ini akan direkodkan dalam log audit keselamatan.</li>
                 <li>Disyorkan supaya <strong>membuat eksport SQL</strong> terlebih dahulu sebagai sandaran.</li>
             </ul>
@@ -243,6 +263,7 @@ $totalTables = count($dbTables ?? []);
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <style>
 @keyframes modalPop {
@@ -275,3 +296,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+

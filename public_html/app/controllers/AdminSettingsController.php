@@ -60,22 +60,42 @@ final class AdminSettingsController extends Controller
 
     /**
      * Dedicated page for database backup & restore (separate from Tetapan).
+     * Page itself is admin-gated by the router; the destructive actions
+     * (reset / import / export) are restricted to super_admin via the
+     * `canManageDatabase` check so admin role sees the page but cannot
+     * run the reset.
      */
     public function database(): void
     {
         $dbTables = $this->collectDatabaseInventory();
+        $canManageDatabase = ($_SESSION['user_role'] ?? '') === 'super_admin';
 
         $this->view('admin/database', [
-            'title'    => 'Pangkalan Data & Sandaran',
-            'dbTables' => $dbTables,
+            'title'             => 'Pangkalan Data & Sandaran',
+            'dbTables'          => $dbTables,
+            'canManageDatabase' => $canManageDatabase,
         ]);
     }
 
     /**
-     * Reset all data tables except users (admin/staff login info retained).
+     * Reset all data tables except system settings and admin/super_admin
+     * user accounts. Other users (members, staff) and every business
+     * record (plans, payments, payouts, ledger, etc.) are wiped.
+     * Restricted to super_admin — the most destructive action in the app.
      */
     public function resetData(): void
     {
+        // Defence-in-depth: the route is already $superAdmin-gated, but we
+        // re-check the session role here so a stale middleware config can
+        // never allow an admin account to wipe the database.
+        if (($_SESSION['user_role'] ?? '') !== 'super_admin') {
+            AuditService::log('database.reset.denied', (int) ($_SESSION['user_id'] ?? 0), 'system', null, [
+                'reason' => 'role_not_super_admin',
+            ]);
+            set_flash('error', 'Tindakan ini hanya dibenarkan untuk Super Admin.');
+            $this->redirect('/admin/settings/database');
+        }
+
         $token = (string) ($_POST['csrf_token'] ?? '');
         if (!hash_equals((string) ($_SESSION['csrf_token'] ?? ''), $token)) {
             set_flash('error', 'Sesi tidak sah. Sila cuba lagi.');
@@ -96,11 +116,48 @@ final class AdminSettingsController extends Controller
 
         $userRepo = new \App\Repositories\UserRepository();
         $currentUser = $userRepo->findById($userId);
-        if (!$currentUser || !password_verify($password, (string) ($currentUser->password ?? ''))) {
+
+        // Read the stored hash straight from the database. Going via the
+        // model layer hides issues (e.g. an unset property or a hydration
+        // mismatch) that would cause every correct password to be rejected.
+        $storedHash = '';
+        $userStatus = '';
+        $lockedUntil = null;
+        try {
+            $row = \App\Core\Database::connection()
+                ->prepare('SELECT password, status, locked_until FROM users WHERE id = :id LIMIT 1');
+            $row->execute([':id' => $userId]);
+            $u = $row->fetch(\PDO::FETCH_ASSOC);
+            if ($u) {
+                $storedHash  = (string) ($u['password'] ?? '');
+                $userStatus  = (string) ($u['status'] ?? '');
+                $lockedUntil = $u['locked_until'] ?? null;
+            }
+        } catch (\Throwable $e) {
+            // Fall through — empty hash will be rejected below.
+        }
+
+        $valid = $currentUser !== null
+            && $storedHash !== ''
+            && password_verify($password, $storedHash);
+
+        if (!$valid) {
             AuditService::log('database.reset.failed', $userId, 'system', null, [
                 'reason' => 'invalid_password',
             ]);
-            set_flash('error', 'Kata laluan pentadbir tidak tepat. Reset dibatalkan.');
+            $detail = $storedHash === ''
+                ? ' Tiada hash kata laluan ditemui untuk akaun ini — hubungi pemaju.'
+                : '';
+            set_flash('error', 'Kata laluan pentadbir tidak tepat. Reset dibatalkan.' . $detail);
+            $this->redirect('/admin/settings/database');
+        }
+
+        $isLocked = $lockedUntil !== null && strtotime((string) $lockedUntil) > time();
+        if ($userStatus !== 'active' || $isLocked) {
+            AuditService::log('database.reset.failed', $userId, 'system', null, [
+                'reason' => 'account_not_eligible',
+            ]);
+            set_flash('error', 'Akaun pentadbir tidak aktif atau dikunci. Reset dibatalkan.');
             $this->redirect('/admin/settings/database');
         }
 
@@ -119,13 +176,15 @@ final class AdminSettingsController extends Controller
             $tablesStmt->execute([':db' => $dbName]);
             $allTables = $tablesStmt->fetchAll(\PDO::FETCH_COLUMN);
 
-            // Tables to KEEP — users & their authentication scaffolding.
+            // Tables to KEEP — system settings and the role catalogue.
+            // `users` is NOT preserved wholesale; non-admin accounts are
+            // deleted below so only admin / super_admin can log in again.
             $preserve = [
-                'users',
                 'roles',
-                'user_roles',
-                'password_resets',
-                'sessions',
+                'app_settings',
+                'system_settings',
+                'admin_fee_configs',
+                'admin_fee_versions',
             ];
 
             $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
@@ -140,15 +199,37 @@ final class AdminSettingsController extends Controller
                 $truncated[] = $tableName;
             }
             $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+
+            // Strip non-admin users so only admin / super_admin accounts
+            // (plus any data they still need to log in) survive. We delete
+            // members, staff, and any other role slug that is not one of
+            // the privileged admin slugs.
+            $adminSlugs = ['admin', 'super_admin'];
+            $placeholders = implode(',', array_fill(0, count($adminSlugs), '?'));
+            $deleteUsers = $pdo->prepare(
+                "DELETE u, ur
+                   FROM users u
+              LEFT JOIN user_roles ur ON ur.user_id = u.id
+                  WHERE u.role_id NOT IN (
+                        SELECT id FROM roles WHERE slug IN ($placeholders)
+                  )"
+            );
+            // Fallback for schemas without a `user_roles` table: the LEFT
+            // JOIN above simply matches nothing, so the DELETE only removes
+            // the `users` row. This keeps the query portable.
+            $deleteUsers->execute($adminSlugs);
+            $deletedUsers = $deleteUsers->rowCount();
             $pdo->commit();
 
             AuditService::log('database.reset', $userId, 'system', null, [
                 'tables_truncated' => count($truncated),
+                'users_deleted'    => $deletedUsers,
             ]);
 
             set_flash('success', sprintf(
-                'Reset data berjaya! %d jadual telah dikosongkan. Data pentadbir & staf dipelihara.',
-                count($truncated)
+                'Reset data berjaya! %d jadual telah dikosongkan dan %d akaun bukan-admin dipadamkan. Tetapan sistem & akaun admin/super_admin dipelihara.',
+                count($truncated),
+                $deletedUsers
             ));
         } catch (\Throwable $e) {
             if (isset($pdo) && $pdo->inTransaction()) {
@@ -168,6 +249,15 @@ final class AdminSettingsController extends Controller
      */
     public function exportDatabase(): void
     {
+        if (($_SESSION['user_role'] ?? '') !== 'super_admin') {
+            AuditService::log('database.export.denied', (int) ($_SESSION['user_id'] ?? 0), 'system', null, [
+                'reason' => 'role_not_super_admin',
+            ]);
+            http_response_code(403);
+            echo '403 — Akses ditolak. Super admin sahaja.';
+            return;
+        }
+
         $backupService = new DatabaseBackupService();
         $sql = $backupService->exportSql();
 
@@ -193,6 +283,14 @@ final class AdminSettingsController extends Controller
      */
     public function importDatabase(): void
     {
+        if (($_SESSION['user_role'] ?? '') !== 'super_admin') {
+            AuditService::log('database.import.denied', (int) ($_SESSION['user_id'] ?? 0), 'system', null, [
+                'reason' => 'role_not_super_admin',
+            ]);
+            set_flash('error', 'Tindakan import hanya dibenarkan untuk Super Admin.');
+            $this->redirect('/admin/settings/database');
+        }
+
         $token = (string) ($_POST['csrf_token'] ?? '');
         if (!hash_equals((string) ($_SESSION['csrf_token'] ?? ''), $token)) {
             set_flash('error', 'Sesi tidak sah. Sila cuba lagi.');

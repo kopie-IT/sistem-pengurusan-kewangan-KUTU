@@ -1,0 +1,17 @@
+# Block direct access to installer & sensitive root files when the project
+# root is exposed as the document root (common on cPanel). The application
+# itself is served from /public via the front controller.
+<FilesMatch "^(install\.php|install-cli\.php|\.env|\.env\..*|composer\.(json|lock)|package\.json|README\.md)$">
+    Require all denied
+</FilesMatch>
+
+# Optional convenience: redirect root requests to /public (for setups where
+# the entire repo is the document root and you want /public to be the web root).
+# Uncomment if your cPanel "Document Root" points at the repo root rather than
+# the /public subdirectory.
+#
+# <IfModule mod_rewrite.c>
+#     RewriteEngine On
+#     RewriteCond %{REQUEST_URI} !^/public/
+#     RewriteRule ^(.*)$ public/$1 [L]
+# </IfModule>

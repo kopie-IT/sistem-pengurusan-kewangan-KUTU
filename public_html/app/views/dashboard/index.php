@@ -2,6 +2,8 @@
 /** @var \App\Models\User|null $user */
 /** @var \App\Models\Member|null $member */
 /** @var array{score: int|null, level: string} $score */
+/** @var array<int, array<string, mixed>> $unpaidSchedules */
+/** @var array{count:int, total:string} $unpaidSummary */
 $isAdmin = $user?->isAdmin() ?? false;
 
 $scoreValue = $score['score'] ?? null;
@@ -100,6 +102,88 @@ $scorePercent = $scoreValue !== null ? max(0, min(100, (int) $scoreValue)) : 0;
             </div>
         </div>
     </section>
+
+    <!-- ============================================================== -->
+    <!-- Unpaid / overdue payments (member-facing).                    -->
+    <!-- ============================================================== -->
+    <?php if ($member !== null): ?>
+        <section class="card unpaid-list-card" aria-labelledby="unpaid-heading">
+            <div class="card-heading">
+                <div>
+                    <span class="section-kicker">Caruman</span>
+                    <h2 id="unpaid-heading" class="card-title">Pembayaran yang lewat atau belum dibuat</h2>
+                    <p class="muted">Senarai caruman anda yang sudah melepasi tarikh akhir. Selesaikan segera untuk mengekalkan skor kredit yang baik.</p>
+                </div>
+                <div class="unpaid-summary">
+                    <span class="badge <?= ((int) ($unpaidSummary['count'] ?? 0)) > 0 ? 'badge-danger' : 'badge-success' ?>">
+                        <?= (int) ($unpaidSummary['count'] ?? 0) ?> rekod
+                    </span>
+                    <span class="unpaid-total">Baki tertunggak: <strong><?= format_money($unpaidSummary['total'] ?? '0.00') ?></strong></span>
+                </div>
+            </div>
+
+            <?php if (empty($unpaidSchedules)): ?>
+                <div class="empty-state-card">
+                    <strong>Tiada caruman tertunggak.</strong>
+                    <p class="muted">Terima kasih! Semua caruman anda dijelaskan mengikut jadual.</p>
+                </div>
+            <?php else: ?>
+                <div class="table-wrap">
+                    <table class="table table-unpaid">
+                        <thead>
+                            <tr>
+                                <th>Pelan</th>
+                                <th>Tarikh Akhir</th>
+                                <th>Lewat</th>
+                                <th>Status</th>
+                                <th style="text-align:right;">Baki</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($unpaidSchedules as $row):
+                                $dueTs   = strtotime((string) ($row['due_date'] ?? 'now'));
+                                $todayTs = strtotime(date('Y-m-d'));
+                                $daysLate = $dueTs === false || $todayTs < $dueTs
+                                    ? 0
+                                    : (int) floor(($todayTs - $dueTs) / 86400);
+                                $balance = (float) $row['amount'] - (float) $row['amount_paid'];
+                                $statusLabel = match ((string) ($row['status'] ?? '')) {
+                                    'overdue' => 'Lewat',
+                                    'partial' => 'Sebahagian',
+                                    'pending' => 'Belum bayar',
+                                    default   => ucfirst((string) ($row['status'] ?? '-')),
+                                };
+                                $statusTone = match ((string) ($row['status'] ?? '')) {
+                                    'overdue' => 'badge-danger',
+                                    'partial' => 'badge-warning',
+                                    default   => 'badge-neutral',
+                                };
+                            ?>
+                                <tr>
+                                    <td>
+                                        <strong><?= e((string) ($row['plan_name'] ?? '-')) ?></strong>
+                                        <small class="muted d-block"><?= e((string) ($row['plan_code'] ?? '')) ?></small>
+                                    </td>
+                                    <td><?= e(date('d M Y', $dueTs ?: time())) ?></td>
+                                    <td>
+                                        <?php if ($daysLate > 0): ?>
+                                            <span class="badge <?= $daysLate > 30 ? 'badge-danger' : 'badge-warning' ?>"><?= (int) $daysLate ?> hari</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-neutral">Hari ini</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><span class="badge <?= $statusTone ?>"><?= e($statusLabel) ?></span></td>
+                                    <td style="text-align:right;"><?= format_money(number_format($balance, 2, '.', '')) ?></td>
+                                    <td><a href="<?= url('/payments') ?>" class="btn btn-primary btn-sm">Bayar</a></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </section>
+    <?php endif; ?>
 
     <div class="member-dashboard-grid">
         <section class="card account-summary" aria-labelledby="akaun-heading">

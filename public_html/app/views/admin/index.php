@@ -4,11 +4,13 @@
  * @var array $todayDue
  * @var array $comingWeek
  * @var string $todayLabel
+ * @var array $overdueSchedules
  */
 $s = $stats ?? [];
-$todayDue   = $todayDue ?? [];
-$comingWeek = $comingWeek ?? [];
-$todayLabel = $todayLabel ?? date('d M Y');
+$todayDue         = $todayDue ?? [];
+$comingWeek       = $comingWeek ?? [];
+$todayLabel       = $todayLabel ?? date('d M Y');
+$overdueSchedules = $overdueSchedules ?? [];
 
 $statCards = [
     ['label' => 'Pelan aktif', 'value' => $s['active_plans'] ?? 0, 'tone' => 'brand', 'icon' => '□'],
@@ -130,6 +132,85 @@ foreach ($comingWeek as $r) { $sumWeek = bcadd($sumWeek, (string) $r['expected_a
                             <td style="text-align:right;"><strong><?= format_money($sumWeek) ?></strong></td>
                         </tr>
                     </tfoot>
+                </table>
+            </div>
+        <?php endif; ?>
+    </section>
+
+    <!-- Overdue / not-yet-paid contributions ----------------------------- -->
+    <section class="card overdue-list-card" aria-labelledby="overdue-heading">
+        <div class="card-heading">
+            <div>
+                <span class="section-kicker">Caruman Tertunggak</span>
+                <h2 id="overdue-heading" class="card-title">Pembayaran yang lewat atau belum dibuat</h2>
+                <p class="muted">Senarai caruman ahli yang sudah melepasi tarikh akhir tetapi masih berbaki. Susun mengikut tarikh akhir paling lama.</p>
+            </div>
+            <div class="overdue-summary">
+                <span class="badge badge-danger"><?= (int) ($s['overdue_count'] ?? 0) ?> rekod</span>
+                <span class="overdue-total">Baki tertunggak: <strong><?= format_money($s['overdue_outstanding'] ?? '0.00') ?></strong></span>
+            </div>
+        </div>
+
+        <?php if ($overdueSchedules === []): ?>
+            <div class="empty-state-card">
+                <strong>Tiada caruman tertunggak.</strong>
+                <p class="muted">Semua ahli membayar mengikut jadual. Teruskan!</p>
+            </div>
+        <?php else: ?>
+            <div class="table-wrap">
+                <table class="table table-overdue">
+                    <thead>
+                        <tr>
+                            <th>Ahli</th>
+                            <th>Pelan</th>
+                            <th>Tarikh Akhir</th>
+                            <th>Lewat</th>
+                            <th>Status</th>
+                            <th style="text-align:right;">Baki</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($overdueSchedules as $row):
+                            $dueTs   = strtotime((string) ($row['due_date'] ?? 'now'));
+                            $todayTs = strtotime(date('Y-m-d'));
+                            $daysLate = $dueTs === false || $todayTs < $dueTs
+                                ? 0
+                                : (int) floor(($todayTs - $dueTs) / 86400);
+                            $balance = (float) $row['amount'] - (float) $row['amount_paid'];
+                            $statusLabel = match ((string) ($row['status'] ?? '')) {
+                                'overdue' => 'Lewat',
+                                'partial' => 'Sebahagian',
+                                'pending' => 'Belum bayar',
+                                default   => ucfirst((string) ($row['status'] ?? '-')),
+                            };
+                            $statusTone = match ((string) ($row['status'] ?? '')) {
+                                'overdue' => 'badge-danger',
+                                'partial' => 'badge-warning',
+                                default   => 'badge-neutral',
+                            };
+                        ?>
+                            <tr>
+                                <td>
+                                    <strong><?= e((string) ($row['member_name'] ?? '-')) ?></strong>
+                                    <small class="muted d-block"><?= e((string) ($row['member_code'] ?? '')) ?></small>
+                                </td>
+                                <td>
+                                    <span><?= e((string) ($row['plan_name'] ?? '-')) ?></span>
+                                    <small class="muted d-block"><?= e((string) ($row['plan_code'] ?? '')) ?></small>
+                                </td>
+                                <td><?= e(date('d M Y', $dueTs ?: time())) ?></td>
+                                <td>
+                                    <?php if ($daysLate > 0): ?>
+                                        <span class="badge <?= $daysLate > 30 ? 'badge-danger' : 'badge-warning' ?>"><?= (int) $daysLate ?> hari</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-neutral">Hari ini</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><span class="badge <?= $statusTone ?>"><?= e($statusLabel) ?></span></td>
+                                <td style="text-align:right;"><?= format_money(number_format($balance, 2, '.', '')) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
                 </table>
             </div>
         <?php endif; ?>

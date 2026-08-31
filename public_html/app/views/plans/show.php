@@ -119,8 +119,6 @@
                         <thead>
                             <tr>
                                 <th>Kitaran</th>
-                                <th>Tarikh Mula</th>
-                                <th>Tarikh Tamat</th>
                                 <th>Tarikh Bayaran Payout</th>
                                 <th>Penerima Giliran Kutu</th>
                                 <th>Jumlah Payout</th>
@@ -150,8 +148,6 @@
                                 ?>
                                 <tr>
                                     <td><span class="badge badge-neutral">Kitaran <?= e((string) ($c['cycle_no'] ?? '-')) ?></span></td>
-                                    <td><?= e((string) ($c['start_date'] ?? '-')) ?></td>
-                                    <td><?= e((string) ($c['end_date'] ?? '-')) ?></td>
                                     <td>
                                         <strong><?= e((string) ($c['payout_date'] ?? $c['start_date'] ?? '-')) ?></strong>
                                     </td>

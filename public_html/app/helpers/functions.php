@@ -21,9 +21,14 @@ if (!function_exists('asset')) {
     {
         // Cache-busting: append a version based on the file's last-modified time
         // so browsers always fetch the latest CSS/JS after an update.
-        $file = dirname(__DIR__, 2) . '/public/' . ltrim($path, '/');
+        static $cache = [];
+        $clean = '/' . ltrim($path, '/');
+        if (isset($cache[$clean])) {
+            return $cache[$clean];
+        }
+        $file = dirname(__DIR__, 2) . '/public' . $clean;
         $ver = is_file($file) ? (string) filemtime($file) : '0';
-        return '/' . ltrim($path, '/') . '?v=' . $ver;
+        return $cache[$clean] = $clean . '?v=' . $ver;
     }
 }
 
@@ -50,9 +55,13 @@ if (!function_exists('csrf_token')) {
 }
 
 if (!function_exists('old')) {
-    function old(string $key, mixed $default = ''): mixed
+    function old(string $key, string $default = ''): string
     {
-        return $_SESSION['old'][$key] ?? $default;
+        $value = $_SESSION['old'][$key] ?? $default;
+        if (is_string($value)) {
+            unset($_SESSION['old'][$key]);
+        }
+        return (string) $value;
     }
 }
 
@@ -62,17 +71,6 @@ if (!function_exists('flash')) {
         $value = $_SESSION['flash'][$key] ?? null;
         unset($_SESSION['flash'][$key]);
         return $value;
-    }
-}
-
-if (!function_exists('old')) {
-    function old(string $key, string $default = ''): string
-    {
-        $value = $_SESSION['old'][$key] ?? $default;
-        if (is_string($value)) {
-            unset($_SESSION['old'][$key]);
-        }
-        return (string) $value;
     }
 }
 
@@ -117,8 +115,7 @@ if (!function_exists('brand_name')) {
             return $cache;
         }
         try {
-            $repo = new \App\Repositories\AppSettingRepository();
-            $name = $repo->get('app_name', 'Sistem Pengurusan Main Kutu');
+            $name = (new \App\Repositories\AppSettingRepository())->get('app_name', 'Sistem Pengurusan Main Kutu');
             $cache = $name !== null && $name !== '' ? $name : 'Sistem Pengurusan Main Kutu';
         } catch (\Throwable $e) {
             $cache = 'Sistem Pengurusan Main Kutu';
@@ -133,13 +130,17 @@ if (!function_exists('brand_logo_url')) {
      */
     function brand_logo_url(): ?string
     {
-        try {
-            $repo = new \App\Repositories\AppSettingRepository();
-            $stored = $repo->get('logo_path');
-            return ($stored !== null && $stored !== '') ? '/brand/logo' : null;
-        } catch (\Throwable $e) {
-            return null;
+        static $cache = false;
+        if ($cache !== false) {
+            return $cache;
         }
+        try {
+            $stored = (new \App\Repositories\AppSettingRepository())->get('logo_path');
+            $cache = ($stored !== null && $stored !== '') ? '/brand/logo' : null;
+        } catch (\Throwable $e) {
+            $cache = null;
+        }
+        return $cache;
     }
 }
 
@@ -185,20 +186,25 @@ if (!function_exists('user_avatar_url')) {
     /**
      * Public URL for the given user's avatar (auth-gated via /file/avatar/{id}).
      * Returns null when no avatar has been uploaded so the caller can fall
-     * back to a coloured initials bubble.
+     * back to a coloured initials bubble. Per-request memoized so multiple
+     * lookups in the same render (header + mobile menu) hit the DB once.
      */
     function user_avatar_url(?int $userId): ?string
     {
         if ($userId === null || $userId <= 0) {
             return null;
         }
-        try {
-            $repo = new \App\Repositories\UserRepository();
-            $stored = $repo->getAvatarPath($userId);
-        } catch (\Throwable $e) {
-            return null;
+        static $cache = [];
+        if (array_key_exists($userId, $cache)) {
+            return $cache[$userId];
         }
-        return ($stored !== null && $stored !== '') ? '/file/avatar/' . $userId : null;
+        try {
+            $stored = (new \App\Repositories\UserRepository())->getAvatarPath($userId);
+        } catch (\Throwable $e) {
+            $stored = null;
+        }
+        $cache[$userId] = ($stored !== null && $stored !== '') ? '/file/avatar/' . $userId : null;
+        return $cache[$userId];
     }
 }
 

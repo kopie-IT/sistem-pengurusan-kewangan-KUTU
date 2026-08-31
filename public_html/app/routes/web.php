@@ -43,7 +43,8 @@ $container->singleton(AuthService::class,             fn () => new AuthService(
 ));
 $container->bind(AuthController::class,      fn () => new AuthController(
     $container->make(AuthService::class),
-    $container->make(UserRepository::class)
+    $container->make(UserRepository::class),
+    $container->make(CaptchaService::class)
 ));
 $container->bind(DashboardController::class, fn () => new DashboardController(
     $container->make(AuthService::class),

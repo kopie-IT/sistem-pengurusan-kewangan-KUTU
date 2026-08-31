@@ -24,6 +24,10 @@ $brandLogoUrl   = brand_logo_url();
 $brandInitials  = brand_initials();
 $userAvatarUrl  = $authenticated ? user_avatar_url($currentUserId) : null;
 $userInitials   = user_initials($currentUser);
+$brandTagline   = (new \App\Repositories\AppSettingRepository())->get(
+    'brand_tagline',
+    'Platform pengurusan Main Kutu yang moden, telus dan selamat untuk komuniti anda.'
+);
 ?>
 <div class="app-shell">
     <header class="app-header">
@@ -127,7 +131,7 @@ $userInitials   = user_initials($currentUser);
             <footer class="app-footer">
                 <div class="container">
                     <div class="footer-grid">
-                        <div class="footer-brand"><a href="<?= url('/') ?>" class="nav-brand" style="color:#fff;"><?= partial('brand', ['logoUrl' => $brandLogoUrl, 'fallbackInitials' => $brandInitials]) ?><span style="color:#fff;"><?= e($brandName) ?></span></a><p><?= e((new \App\Repositories\AppSettingRepository())->get('brand_tagline', 'Platform pengurusan Main Kutu yang moden, telus dan selamat untuk komuniti anda.')) ?></p></div>
+                        <div class="footer-brand"><a href="<?= url('/') ?>" class="nav-brand" style="color:#fff;"><?= partial('brand', ['logoUrl' => $brandLogoUrl, 'fallbackInitials' => $brandInitials]) ?><span style="color:#fff;"><?= e($brandName) ?></span></a><p><?= e($brandTagline) ?></p></div>
                         <div class="footer-links"><h4>Produk</h4><ul><li><a href="<?= url('/#features') ?>">Ciri</a></li><li><a href="<?= url('/#how') ?>">Bagaimana</a></li></ul></div>
                         <div class="footer-links"><h4>Sokongan</h4><ul><li><a href="#">Bantuan</a></li><li><a href="#">Hubungi Kami</a></li><li><a href="#">FAQ</a></li></ul></div>
                         <div class="footer-links"><h4>Legal</h4><ul><li><a href="#">Terma</a></li><li><a href="#">Privasi</a></li><li><a href="#">Keselamatan</a></li></ul></div>

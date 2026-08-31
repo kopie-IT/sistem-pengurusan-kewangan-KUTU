@@ -74,6 +74,79 @@ final class ContributionScheduleRepository
         return array_map([$this, 'hydrate'], $stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
+    /**
+     * Dashboard-friendly listing of overdue or not-yet-paid schedules
+     * joined to plan, member, and user info so the UI can render names
+     * without further lookups. `status IN ('pending','partial','overdue')`
+     * keeps rows that are still unpaid (regardless of whether a cron has
+     * flipped the status to 'overdue'), and the `due_date <= :as_of`
+     * constraint ensures future-dated schedules are excluded.
+     *
+     * @param int|null $memberId  Restrict to one member when provided.
+     * @param int      $limit     Maximum rows returned (default 25).
+     * @return array<int, array<string, mixed>>
+     */
+    public function findUnpaidWithDetails(?int $memberId, int $limit = 25): array
+    {
+        $params = [':as_of' => date('Y-m-d')];
+        $where  = "cs.due_date <= :as_of
+                    AND cs.status IN ('pending', 'partial', 'overdue')";
+        if ($memberId !== null) {
+            $where .= ' AND cs.member_id = :member_id';
+            $params[':member_id'] = $memberId;
+        }
+
+        $sql = "SELECT cs.id, cs.plan_id, cs.member_id, cs.due_date,
+                       cs.amount, cs.amount_paid, cs.status,
+                       p.name        AS plan_name,
+                       p.plan_code   AS plan_code,
+                       m.member_code AS member_code,
+                       u.name        AS member_name,
+                       u.email       AS member_email
+                  FROM contribution_schedules cs
+            INNER JOIN plans   p ON p.id = cs.plan_id
+            INNER JOIN members m ON m.id = cs.member_id
+            INNER JOIN users   u ON u.id = m.user_id
+                 WHERE {$where}
+              ORDER BY cs.due_date ASC
+                 LIMIT {$limit}";
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return is_array($rows) ? $rows : [];
+    }
+
+    /**
+     * Total outstanding amount + count of overdue/unpaid schedules.
+     * Used to populate the dashboard summary tile.
+     *
+     * @return array{count:int, total:string}
+     */
+    public function unpaidSummary(?int $memberId): array
+    {
+        $params = [':as_of' => date('Y-m-d')];
+        $where  = "due_date <= :as_of
+                    AND status IN ('pending', 'partial', 'overdue')";
+        if ($memberId !== null) {
+            $where .= ' AND member_id = :member_id';
+            $params[':member_id'] = $memberId;
+        }
+
+        $sql = "SELECT COUNT(*)        AS total_count,
+                       COALESCE(SUM(amount - amount_paid), 0) AS outstanding
+                  FROM contribution_schedules
+                 WHERE {$where}";
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        return [
+            'count' => (int) ($row['total_count'] ?? 0),
+            'total' => number_format((float) ($row['outstanding'] ?? 0), 2, '.', ''),
+        ];
+    }
+
     public function findPendingForMemberPlan(int $memberId, int $planId): ?ContributionSchedule
     {
         $sql = "SELECT * FROM contribution_schedules

@@ -27,7 +27,7 @@ AddDefaultCharset UTF-8
 </IfModule>
 
 # Prevent access to sensitive files
-<FilesMatch "^(\.env|\.env\..*|composer\.(json|lock)|package\.json|README\.md)$">
+<FilesMatch "^(\.env|\.env\..*|composer\.(json|lock)|package\.json|README\.md|install\.php|install-cli\.php)$">
     Require all denied
 </FilesMatch>
 
@@ -44,11 +44,18 @@ AddDefaultCharset UTF-8
 # Cache static assets
 <IfModule mod_expires.c>
     ExpiresActive On
-    ExpiresByType text/css "access plus 1 month"
-    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
     ExpiresByType image/png "access plus 1 year"
     ExpiresByType image/jpeg "access plus 1 year"
     ExpiresByType image/svg+xml "access plus 1 year"
     ExpiresByType image/webp "access plus 1 year"
     ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresDefault "access plus 1 day"
+</IfModule>
+
+# Enable Keep-Alive + send Vary so shared caches respect the negotiation.
+<IfModule mod_headers.c>
+    Header set Connection keep-alive
+    Header append Vary "Accept-Encoding"
 </IfModule>

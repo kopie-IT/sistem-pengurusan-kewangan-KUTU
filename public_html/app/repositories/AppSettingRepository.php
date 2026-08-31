@@ -13,22 +13,23 @@ use PDO;
  */
 final class AppSettingRepository
 {
+    /** @var array<string, string|null>|null Per-request cache of loaded keys. */
+    private static ?array $cache = null;
+
     public function get(string $key, ?string $default = null): ?string
     {
-        $stmt = Database::connection()->prepare('SELECT value FROM app_settings WHERE `key` = :k LIMIT 1');
-        $stmt->execute([':k' => $key]);
-        $v = $stmt->fetchColumn();
-        return $v === false ? $default : (string) $v;
+        if (self::$cache === null) {
+            self::$cache = $this->loadAll();
+        }
+        return self::$cache[$key] ?? $default;
     }
 
     public function all(): array
     {
-        $rows = Database::connection()->query('SELECT `key`, value FROM app_settings')->fetchAll(PDO::FETCH_ASSOC);
-        $out = [];
-        foreach ($rows as $r) {
-            $out[$r['key']] = $r['value'];
+        if (self::$cache === null) {
+            self::$cache = $this->loadAll();
         }
-        return $out;
+        return self::$cache;
     }
 
     public function set(string $key, ?string $value): void
@@ -38,5 +39,18 @@ final class AppSettingRepository
              ON DUPLICATE KEY UPDATE value = VALUES(value)'
         );
         $stmt->execute([':k' => $key, ':v' => $value]);
+        // Keep cache coherent so the same request sees the new value.
+        self::$cache = null;
+    }
+
+    /** @return array<string, string|null> */
+    private function loadAll(): array
+    {
+        $rows = Database::connection()->query('SELECT `key`, value FROM app_settings')->fetchAll(PDO::FETCH_ASSOC);
+        $out = [];
+        foreach ($rows as $r) {
+            $out[$r['key']] = $r['value'];
+        }
+        return $out;
     }
 }

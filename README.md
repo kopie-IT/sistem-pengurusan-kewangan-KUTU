@@ -22,30 +22,65 @@ Aplikasi web untuk mengurus pelan Main Kutu secara digital — pembayaran, payou
 
 ---
 
-## Struktur Projek
+## Tangkapan Skrin & Antara Muka
 
-```
-public_html/
-    app/
-        config/         # Konfigurasi
-        controllers/    # Controller (HTTP layer)
-        core/           # Database, Router, Container, View
-        helpers/        # Helper functions
-        middleware/     # Authenticate, Authorize, ForcePasswordReset
-        models/         # Eloquent-style data models
-        repositories/   # SQL repositories (parameterized queries)
-        routes/         # web.php route table
-        services/       # Business logic services
-        views/          # View templates (PHP)
-    cron/               # Skrip CLI (migrate, seed, daily)
-    database/
-        migrations/     # *.sql files (idempotent via migrations table)
-        seeders/        # *.sql files
-    public/             # Apache document root (front controller)
-    storage/            # logs/, uploads/  (gitignored, created at runtime)
-    install.php         # Wizard pemasangan cPanel (lihat di bawah)
-    install-cli.php     # Wizard pemasangan CLI
-```
+Beberapa paparan utama sistem untuk memberi gambaran pantas tentang aliran kerja pentadbir dan ahli.
+
+### Halaman Utama (Landing Page)
+
+Paparan pertama yang dilihat oleh pelawat — menonjolkan nilai teras sistem, ringkasan mata wang & had kredit, serta penarafan kepercayaan untuk membina keyakinan sebelum mendaftar.
+
+![Halaman Utama](readme-images/homepage.png)
+
+*Laman utama dengan slogan "Urus Main Kutu dengan cara yang moden & telus", kad ringkasan sistem (100 CREDIT MAX, MYR MATA WANG, 2 PAYOUT) dan penarafan 4.9/5.*
+
+### Log Masuk
+
+Skrin log masuk mengandungi borang log masuk dengan emel & kata laluan.
+
+![Log Masuk](readme-images/login-page.png)
+
+
+
+### Dashboard Pentadbir
+
+Papan pemuka untuk Super Admin — menunjukkan profil ringkasan (nama, emel, peranan), status skor kredit (Tahap: Belum Dinilai / 100), tindakan pantas (Semak caruman, Semak payout, Pelan tersedia) dan kad navigasi ke modul utama.
+
+![Dashboard](readme-images/Dashboard.png)
+
+*Dashboard Super Admin dengan ringkasan akaun, skor kredit, tindakan pantas dan pintasan ke pelan, kalendar, payout & makluman.*
+
+### Pengurusan Pelan (Plan Pakej)
+
+Modul pengurusan pelan Main Kutu — jadual memaparkan semua pelan aktif dengan kod unik (contoh: KUTU-2026-W), nama pelan, jumlah caruman, kitaran, bilangan ahli, status dan tindakan (lihat/edit/padam).
+
+![Pelan](readme-images/Plan%20pakej.png)
+
+*Senarai 6 pelan aktif (KUTU-2026-W hingga KUTU-2026-A) dengan statistik caruman, ahli dan status.*
+
+### Urus Giliran Payout
+
+Modul payout untuk mengurus giliran pembayaran balik kepada ahli — memaparkan kad ringkasan (Jumlah Giliran: 64, Telah Dibayar: 37, Menunggu: 22, Perlu Bayar Segera: 0) dan jadual terperinci setiap giliran.
+
+![Payout](readme-images/payout.png)
+
+*Halaman "Urus Giliran Payout" dengan statistik giliran dan jadual pembayaran mengikut kitaran pelan.*
+
+### Pengurusan Bayaran & Pengesahan
+
+Modul pengesahan bayaran ahli — statistik keseluruhan (1,475 jumlah transaksi, 87 menunggu, 1,384 diluluskan, 4 ditolak) dan jadual resit dengan tindakan lulus/tolak.
+
+![Pengurusan Bayaran](readme-images/pengurusan%20pembayaran.png)
+
+*Halaman "Pengurusan Bayaran & Pengesahan" dengan KPI transaksi dan senarai resit yang perlu disemak.*
+
+### Skor Kredit & Risiko Ahli
+
+Penilaian kredit automatik untuk setiap ahli — senarai ahli dengan skor 0–100, tahap risiko (Belum Dinilai / Low risk / High risk) dan sejarah pembayaran untuk membantu pentadbir membuat keputusan payout.
+
+![Skor Kredit](readme-images/skor%20kredit%20risk.png)
+
+*Halaman "Skor Kredit Ahli" memaparkan senarai ahli berserta skor kredit dan label risiko terkini.*
 
 ---
 
@@ -246,4 +281,4 @@ Fasa 7 — Wizard Pemasangan cPanel ✅
 
 ## Lesen
 
-Proprietari. Hak cipta terpelihara.
+OpenSource

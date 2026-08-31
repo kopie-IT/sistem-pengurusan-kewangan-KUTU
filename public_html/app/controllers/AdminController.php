@@ -6,12 +6,14 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\Database;
+use App\Repositories\ContributionScheduleRepository;
 use App\Services\PlanService;
 
 final class AdminController extends Controller
 {
     public function __construct(
         private PlanService $plans,
+        private ContributionScheduleRepository $schedules = new ContributionScheduleRepository(),
     ) {}
 
     public function index(): void
@@ -66,12 +68,22 @@ final class AdminController extends Controller
             }
         }
 
+        // ----- Overdue / not-yet-paid contributions ----------------------
+        // Listing schedules that are still unpaid (pending, partial, or
+        // overdue) where the due date is today or earlier. Surfaced on
+        // the admin dashboard so operators can chase outstanding payments.
+        $overdueSchedules   = $this->schedules->findUnpaidWithDetails(null, 25);
+        $overdueSummary     = $this->schedules->unpaidSummary(null);
+        $stats['overdue_count']      = $overdueSummary['count'];
+        $stats['overdue_outstanding'] = $overdueSummary['total'];
+
         $this->view('admin/index', [
-            'title'        => 'Dashboard Pentadbir',
-            'stats'        => $stats,
-            'todayDue'     => $todayDue,
-            'comingWeek'   => $comingWeek,
-            'todayLabel'   => date('d M Y'),
+            'title'             => 'Dashboard Pentadbir',
+            'stats'             => $stats,
+            'todayDue'          => $todayDue,
+            'comingWeek'        => $comingWeek,
+            'todayLabel'        => date('d M Y'),
+            'overdueSchedules'  => $overdueSchedules,
         ]);
     }
 }

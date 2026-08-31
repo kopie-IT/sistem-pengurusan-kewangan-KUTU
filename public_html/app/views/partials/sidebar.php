@@ -58,6 +58,9 @@ $icon = static function (string $key): string {
 $isAdmin = in_array($role, ['admin', 'super_admin', 'staff'], true);
 // Sidebar Sistem group + Tetapan page is restricted to admin/super_admin only.
 $isSuperAdmin = in_array($role, ['admin', 'super_admin'], true);
+// Database reset is the most destructive action — restrict the menu entry
+// to super_admin only (admin role cannot see / use the reset page).
+$isOnlySuperAdmin = $role === 'super_admin';
 
 if ($isAdmin) {
     $sideTitle = 'Pentadbir';
@@ -96,14 +99,17 @@ if ($isAdmin) {
     ];
 
     // Sistem > Tetapan & Urus Pengguna hanya untuk admin / super_admin (bukan staff).
+    // Pangkalan Data (reset) dihadkan kepada super_admin sahaja.
     if ($isSuperAdmin) {
         $groups[] = [
             'label' => 'Sistem',
-            'items' => [
+            'items' => array_filter([
                 ['label' => 'Urus Pengguna',   'url' => '/admin/users',                    'icon' => 'users'],
                 ['label' => 'Tetapan',         'url' => '/admin/settings',                 'icon' => 'settings'],
-                ['label' => 'Pangkalan Data',  'url' => '/admin/settings/database',          'icon' => 'database'],
-            ],
+                $isOnlySuperAdmin
+                    ? ['label' => 'Pangkalan Data', 'url' => '/admin/settings/database', 'icon' => 'database']
+                    : null,
+            ], static fn ($x) => $x !== null),
         ];
     }
 } else {

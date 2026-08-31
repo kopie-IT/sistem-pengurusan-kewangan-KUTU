@@ -129,8 +129,12 @@ final class Router
 
     private function convertPathToRegex(string $path): string
     {
+        static $cache = [];
+        if (isset($cache[$path])) {
+            return $cache[$path];
+        }
         $pattern = preg_replace('#\{([a-zA-Z_][a-zA-Z0-9_]*)\}#', '(?P<$1>[^/]+)', $path);
-        return '#^' . $pattern . '$#';
+        return $cache[$path] = '#^' . $pattern . '$#';
     }
 
     /**
